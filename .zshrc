@@ -8,5 +8,42 @@ source $ZSH/oh-my-zsh.sh
 alias reload="source ~/.zshrc"
 alias edit="nvim ~/.zshrc"
 alias config="cd ~/.config/nvim && nvim ."
-alias dotfiles="git --git-dir=$HOME/.dotfiles --work-tree=$HOME"
-alias dev="cd /mnt/c/Users/IvanL/dev" 
+alias df="git --git-dir=$HOME/.dotfiles --work-tree=$HOME"
+alias tc="nvim /Users/ivanlynch/.config/alacritty/alacritty.yml"
+
+
+# Load current dev folder based on the SO
+if [[ $(uname) == "Darwin" ]]; then
+    alias dev="cd ~/dev" 
+elif [[ $(uname) == "Linux" ]]; then
+    alias dev="cd /mnt/c/Users/IvanL/dev" 
+fi
+
+# Java Setup
+export PATH="/opt/homebrew/opt/openjdk@11/bin:$PATH"
+
+# Android Setup
+export ANDROID_HOME=$HOME/Library/Android/sdk
+export ANDROID_SDK_ROOT=$HOME/Library/Android/sdk
+export PATH=$PATH:$ANDROID_HOME/emulator
+export PATH=$PATH:$ANDROID_HOME/tools
+export PATH=$PATH:$ANDROID_HOME/tools/bin
+export PATH=$PATH:$ANDROID_HOME/platform-tools
+
+# Created by `pipx` on 2023-10-25 20:47:59
+export PATH="$PATH:/Users/ivanlynch/.local/bin"
+
+# Pyenv Config
+export PYENV_ROOT="$HOME/.pyenv"
+command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"
+eval "$(pyenv init -)"
+export PATH="/opt/homebrew/opt/curl/bin:$PATH"
+
+#Asdf setup
+. "$HOME/.asdf/asdf.sh"
+export PATH="/opt/homebrew/opt/openjdk@11/bin:$PATH"
+
+#Puppeter
+export PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+export PUPPETEER_EXECUTABLE_PATH=`which chromium`
+
