@@ -1,0 +1,58 @@
+---
+- name: "OS | Install zsh"
+  apt: name=zsh
+  tags:
+    - install
+    - zsh
+    
+- name: "OS | Change default shell to zsh"
+  ansible.builtin.shell: "chsh -s /bin/zsh"
+  become: true
+  tags:
+    - install
+    - zsh
+
+- name: "ZSH | Detect oh-my-zsh"
+  tags:
+    - install
+    - zsh
+  ansible.builtin.stat:
+    path: "{{ ansible_user_dir }}/.oh-my-zsh"
+  register: ohmyzsh
+
+- name: "ZSH | Register oh-my-zsh state"
+  tags:
+    - install
+    - zsh
+  ansible.builtin.set_fact:
+    ohmyzsh_is_installed: "{{ ohmyzsh.stat.exists }}"
+
+- name: "ZSH | Debug ohmybash_is_installed"
+  tags:
+    - install
+    - zsh
+  ansible.builtin.debug:
+    var: ohmyzsh_is_installed
+
+- name: "ZSH | Install oh-my-zsh"
+  tags:
+    - install
+    - zsh
+  when: not ohmyzsh_is_installed
+  block:
+    - name: "ZSH | Download oh-my-zsh Install Script"
+      ansible.builtin.shell: sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+
+- name: "ZSH | Install zsh-autosuggestions"
+  tags:
+    - install
+    - zsh
+  ansible.builtin.git:
+    repo: 'https://github.com/zsh-users/zsh-autosuggestions.git'
+    dest: "~/.oh-my-zsh/plugins/zsh-autosuggestions"
+
+- name: "ZSH | Add zsh-autosuggestions plugins to .zshrc"
+  tags:
+    - install
+    - zsh
+  ansible.builtin.shell: sed -i 's/(git/(git zsh-autosuggestions/g' ~/.zshrc
