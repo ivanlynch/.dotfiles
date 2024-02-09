@@ -1,4 +1,4 @@
-vim.g.mapleader = " "
+vim.g.mapleader = ";"
 
 vim.opt.scrolloff=8
 vim.opt.number=true
