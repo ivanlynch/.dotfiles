@@ -3,8 +3,7 @@ return {
 	event = { "BufReadPre", "BufNewFile" },
 	config = function()
 		local conform = require("conform")
-
-		conform.setup({
+		local config = {
 			formatters_by_ft = {
 				lua = { "stylua" },
 				javascript = { "prettier" },
@@ -12,7 +11,7 @@ return {
 				css = { "prettier" },
 				html = { "prettier" },
 				json = { "prettier" },
-				markdown = { "prettier" },
+				markdown = { "prettierd" },
 				yaml = { "prettier" },
 				javascriptreact = { "prettier" },
 				typescriptreact = { "prettier" },
@@ -23,7 +22,34 @@ return {
 				async = false,
 				timeout_ms = 500,
 			},
-		})
+		}
+
+		local options = {
+			ft_parsers = {
+				--     javascript = "babel",
+				--     javascriptreact = "babel",
+				--     typescript = "typescript",
+				--     typescriptreact = "typescript",
+				--     vue = "vue",
+				--     css = "css",
+				--     scss = "scss",
+				--     less = "less",
+				--     html = "html",
+				--     json = "json",
+				--     jsonc = "json",
+				--     yaml = "yaml",
+				markdown = "markdown",
+				["markdown.mdx"] = "mdx",
+				--     graphql = "graphql",
+				--     handlebars = "glimmer",
+			},
+			-- Use a specific prettier parser for a file extension
+			ext_parsers = {
+				-- qmd = "markdown",
+			},
+		}
+
+		conform.setup(config, options)
 
 		vim.keymap.set({ "n", "v" }, "<C-f>", function()
 			conform.format({
