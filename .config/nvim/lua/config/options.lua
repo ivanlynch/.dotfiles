@@ -1,4 +1,6 @@
 vim.g.mapleader = ";"
+vim.g.tpipeline_autoembed = 0
+vim.g.tpipeline_satusline = "%!tpipeline#stl#line()"
 
 local config = {
 	scrolloff = 8, -- Scroll offset
