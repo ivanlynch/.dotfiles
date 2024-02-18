@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Load Spinner
-source ./spinner
+source spinner.sh
 
 # color codes
 RESTORE='\033[0m'
