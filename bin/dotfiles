@@ -89,30 +89,6 @@ VAULTSECRET="$HOME/.ansible-vault/vault.secret"
 DOTFILESDIR="$HOME/.dotfiles"
 SSHDIR="$HOME/.ssh"
 
-# Clone repository
-if ! [[ -d "$DOTFILESDIR" ]]; then
-    task "Cloning repository"
-        cmd "git clone --quiet --bare https://github.com/ivanlynch/dotfiles.git $HOME"
-else
-    task "Updating repository"
-        cmd "git -C $HOME pull --quiet"
-fi
-
-# define config alias locally since the dotfiles
-# aren't installed on the system yet
-function config {
-   git --git-dir=$HOME --work-tree=$HOME $@
-}
-
-# create a directory to backup existing dotfiles to
-mkdir -p .dotfiles-backup && \
- git df checkout 2>&1 | egrep "\s+\." | awk {'print $1'} | \
- xargs -I{} mv {} .dotfiles-backup/{}
-
-# checkout dotfiles from repo
-config checkout
-config config status.showUntrackedFiles no
-
 # Check if MacOS
 if [[ "$OSTYPE" == "darwin"* ]]; then
 #         task "Installing Homebrew"
@@ -137,6 +113,34 @@ elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
     taskDone
     clearTask
 fi
+
+# Check if git is installed
+
+
+# Clone repository
+if ! [[ -d "$DOTFILESDIR" ]]; then
+    task "Cloning repository"
+        cmd "git clone --quiet --bare https://github.com/ivanlynch/dotfiles.git $HOME"
+else
+    task "Updating repository"
+        cmd "git -C $HOME pull --quiet"
+fi
+
+# define config alias locally since the dotfiles
+# aren't installed on the system yet
+function config {
+   git --git-dir=$HOME --work-tree=$HOME $@
+}
+
+# create a directory to backup existing dotfiles to
+mkdir -p .dotfiles-backup && \
+ git df checkout 2>&1 | egrep "\s+\." | awk {'print $1'} | \
+ xargs -I{} mv {} .dotfiles-backup/{}
+
+# checkout dotfiles from repo
+config checkout
+config config status.showUntrackedFiles no
+
 
 # # Check if python3 and pip is installed
 # if ! dpkg -s python3 >/dev/null 2>&1; then
@@ -163,8 +167,6 @@ fi
 #         cmd "cat $SSHDIR/id_rsa.pub >> $SSH_DIR/authorized_keys"
 # fi
 # 
-<<<<<<< HEAD
-=======
 # # Clone repository
 # if ! [[ -d "$DOTFILESDIR" ]]; then
 #     task "Cloning repository"
@@ -173,7 +175,6 @@ fi
 #     task "Updating repository"
 #         cmd "git -C $DOTFILESDIR pull --quiet"
 # fi
->>>>>>> 7d33006940676a7bfd36e920420dd4a315340910
 # 
 # pushd "$DOTFILESDIR" 2>&1 > /dev/null
 # task "Updating Galaxy"
