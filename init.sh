@@ -112,6 +112,7 @@ mkdir -p .dotfiles-backup && \
 # checkout dotfiles from repo
 config checkout
 config config status.showUntrackedFiles no
+
 # Check if MacOS
 if [[ "$OSTYPE" == "darwin"* ]]; then
 #         task "Installing Homebrew"
@@ -162,6 +163,17 @@ fi
 #         cmd "cat $SSHDIR/id_rsa.pub >> $SSH_DIR/authorized_keys"
 # fi
 # 
+<<<<<<< HEAD
+=======
+# # Clone repository
+# if ! [[ -d "$DOTFILESDIR" ]]; then
+#     task "Cloning repository"
+#         cmd "git clone --quiet https://github.com/TechDufus/dotfiles.git $DOTFILESDIR"
+# else
+#     task "Updating repository"
+#         cmd "git -C $DOTFILESDIR pull --quiet"
+# fi
+>>>>>>> 7d33006940676a7bfd36e920420dd4a315340910
 # 
 # pushd "$DOTFILESDIR" 2>&1 > /dev/null
 # task "Updating Galaxy"
