@@ -111,74 +111,76 @@ ISFIRST_RUN="$HOME/.dotfiles_run"
 
 # Check if MacOS
 if [[ "$OSTYPE" == "darwin"* ]]; then
-        task "Installing Homebrew"
-    if ! [[ -x "$(command -v brew)" ]]; then
-        cmd '/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
+#         task "Installing Homebrew"
+#     if ! [[ -x "$(command -v brew)" ]]; then
+#         cmd '/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
+#     task "Installing Ansible"
+#     if ! [[ -x "$(command -v ansible)" ]]; then
+#         cmd "brew install ansible"
+    echo "Hello Mac"
+elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
     task "Installing Ansible"
-    if ! [[ -x "$(command -v ansible)" ]]; then
-        cmd "brew install ansible"
-elif ! [[ dpkg -s ansible >/dev/null 2>&1 ]]; then
-    task "Installing Ansible"
-        cmd "sudo apt-get update"
-        cmd "sudo apt-get install -y software-properties-common"
-        cmd "sudo apt-add-repository -y ppa:ansible/ansible"
-        cmd "sudo apt-get update"
-        cmd "sudo apt-get install -y ansible"
-        cmd "sudo apt-get install python3-argcomplete"
-        cmd "sudo activate-global-python-argcomplete3"
+        cmd "export DEBIAN_FRONTEND=noninteractive"
+        cmd "ln -fs /usr/share/zoneinfo/America/Argentina/Buenos_Aires /etc/localtime"
+        cmd "apt-get update"
+        cmd "apt-get upgrade"
+        cmd "apt-get install -y software-properties-common"
+        cmd "apt-add-repository -y ppa:ansible/ansible"
+        cmd "apt-get install -y tzdata apt-utils"
+        cmd "dpkg-reconfigure -f noninteractive tzdata >/dev/null 2>&1"
+        cmd "apt-get update"
+        cmd "apt-get install -y ansible"
+    taskDone
+    clearTask
 fi
 
-# Check if python3 and pip is installed
-if ! dpkg -s python3 >/dev/null 2>&1; then
-    task "Installing Python3"
-        cmd "sudo apt-get install -y python3"
-fi
-if ! dpkg -s python3-pip >/dev/null 2>&1; then
-    task "Installing Python3 Pip"
-        cmd "sudo apt-get install -y python3-pip"
-fi
-# Check if pip module watchdog is installed
-if ! pip3 list | grep watchdog >/dev/null 2>&1; then
-    task "Installing Python3 Watchdog"
-        cmd "pip3 install watchdog"
-fi
-
-
-# Generate SSH keys
-if ! [[ -f "$SSHDIR/authorized_keys" ]]; then
-    task "Generating SSH keys"
-        cmd "mkdir -p $SSHDIR"
-        cmd "chmod 700 $SSHDIR"
-        cmd "ssh-keygen -b 4096 -t rsa -f $SSHDIR/id_rsa -N '' -C $USER@$HOSTNAME"
-        cmd "cat $SSHDIR/id_rsa.pub >> $SSH_DIR/authorized_keys"
-fi
-
-# Clone repository
-if ! [[ -d "$DOTFILESDIR" ]]; then
-    task "Cloning repository"
-        cmd "git clone --quiet https://github.com/TechDufus/dotfiles.git $DOTFILESDIR"
-else
-    task "Updating repository"
-        cmd "git -C $DOTFILESDIR pull --quiet"
-fi
-
-pushd "$DOTFILESDIR" 2>&1 > /dev/null
-task "Updating Galaxy"
-    cmd "ansible-galaxy install -r requirements.yml"
-
-task "Running playbook"; taskDone
-if [[ -f $VAULTSECRET ]]; then
-    ansible-playbook --vault-password-file $VAULTSECRET "$DOTFILES_DIR/main.yml" "$@"
-else
-    ansible-playbook "$DOTFILESDIR/main.yml" "$@"
-fi
-
-popd 2>&1 > /dev/null
-
-if ! [[ -f "$ISFIRST_RUN" ]]; then
-    echo -e "${CHECKMARK} ${GREEN}First run complete!${NC}"
-    echo -e "${ARROW} ${CYAN}Please reboot your computer to complete the setup.${NC}"
-    touch "$ISFIRST_RUN"
-fi
+# # Check if python3 and pip is installed
+# if ! dpkg -s python3 >/dev/null 2>&1; then
+#     task "Installing Python3"
+#         cmd "sudo apt-get install -y python3"
+# fi
+# if ! dpkg -s python3-pip >/dev/null 2>&1; then
+#     task "Installing Python3 Pip"
+#         cmd "sudo apt-get install -y python3-pip"
+# fi
+# # Check if pip module watchdog is installed
+# if ! pip3 list | grep watchdog >/dev/null 2>&1; then
+#     task "Installing Python3 Watchdog"
+#         cmd "pip3 install watchdog"
+# fi
+# 
+# 
+# # Generate SSH keys
+# if ! [[ -f "$SSHDIR/authorized_keys" ]]; then
+#     task "Generating SSH keys"
+#         cmd "mkdir -p $SSHDIR"
+#         cmd "chmod 700 $SSHDIR"
+#         cmd "ssh-keygen -b 4096 -t rsa -f $SSHDIR/id_rsa -N '' -C $USER@$HOSTNAME"
+#         cmd "cat $SSHDIR/id_rsa.pub >> $SSH_DIR/authorized_keys"
+# fi
+# 
+# # Clone repository
+# if ! [[ -d "$DOTFILESDIR" ]]; then
+#     task "Cloning repository"
+#         cmd "git clone --quiet https://github.com/TechDufus/dotfiles.git $DOTFILESDIR"
+# else
+#     task "Updating repository"
+#         cmd "git -C $DOTFILESDIR pull --quiet"
+# fi
+# 
+# pushd "$DOTFILESDIR" 2>&1 > /dev/null
+# task "Updating Galaxy"
+#     cmd "ansible-galaxy install -r requirements.yml"
+# 
+# task "Running playbook"; taskDone
+# if [[ -f $VAULTSECRET ]]; then
+#     ansible-playbook --vault-password-file $VAULTSECRET "$DOTFILES_DIR/main.yml" "$@"
+# else
+#     ansible-playbook "$DOTFILESDIR/main.yml" "$@"
+# fi
+# 
+# popd 2>&1 > /dev/null
+# 
+echo -e "${ARROW} ${CYAN}Install complete!.${NC}"
 
 # vi:ft=sh:
