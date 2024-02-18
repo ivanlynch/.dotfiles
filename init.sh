@@ -1,17 +1,184 @@
 #!/usr/bin/env bash
-git clone --bare git@github.com:ivanlynch/.dotfiles.git $HOME/.dotfiles
+# git clone --bare git@github.com:ivanlynch/.dotfiles.git $HOME/.dotfiles
 
 # define config alias locally since the dotfiles
 # aren't installed on the system yet
-function config {
-   git --git-dir=$HOME/.dotfiles/ --work-tree=$HOME $@
-}
+# function config {
+#    git --git-dir=$HOME/.dotfiles/ --work-tree=$HOME $@
+# }
 
 # create a directory to backup existing dotfiles to
-mkdir -p .dotfiles-backup && \
-git df checkout 2>&1 | egrep "\s+\." | awk {'print $1'} | \
-xargs -I{} mv {} .dotfiles-backup/{}
+# mkdir -p .dotfiles-backup && \
+# git df checkout 2>&1 | egrep "\s+\." | awk {'print $1'} | \
+# xargs -I{} mv {} .dotfiles-backup/{}
 
 # checkout dotfiles from repo
-config checkout
-config config status.showUntrackedFiles no
+# config checkout
+# config config status.showUntrackedFiles no
+
+# color codes
+RESTORE='\033[0m'
+NC='\033[0m'
+BLACK='\033[00;30m'
+RED='\033[00;31m'
+GREEN='\033[00;32m'
+YELLOW='\033[00;33m'
+BLUE='\033[00;34m'
+PURPLE='\033[00;35m'
+CYAN='\033[00;36m'
+SEA="\\033[38;5;49m"
+LIGHTGRAY='\033[00;37m'
+LBLACK='\033[01;30m'
+LRED='\033[01;31m'
+LGREEN='\033[01;32m'
+LYELLOW='\033[01;33m'
+LBLUE='\033[01;34m'
+LPURPLE='\033[01;35m'
+LCYAN='\033[01;36m'
+WHITE='\033[01;37m'
+OVERWRITE='\e[1A\e[K'
+
+#emoji codes
+CHECKMARK="${GREEN}\xE2\x9C\x94${NC}"
+XMARK="${RED}\xE2\x9C\x96${NC}"
+PIN="${RED}\xF0\x9F\x93\x8C${NC}"
+CLOCK="${GREEN}\xE2\x8C\x9B${NC}"
+ARROW="${SEA}\xE2\x96\xB6${NC}"
+BOOK="${RED}\xF0\x9F\x93\x8B${NC}"
+HOT="${ORANGE}\xF0\x9F\x94\xA5${NC}"
+WARNING="${RED}\xF0\x9F\x9A\xA8${NC}"
+RIGHTANGLE="${GREEN}\xE2\x88\x9F${NC}"
+
+
+DOTFILESLOG="$HOME/.dotfiles.log"
+
+# header colorize the given argument with spacing
+function task {
+    # if task is called while a task was set, complete the previous
+    if [[ $TASK != "" ]]; then
+        printf "${OVERWRITE}${LGREEN} [✓]  ${LGREEN}${TASK}\n"
+    fi
+    # set new task title and print
+    TASK=$1
+    printf "${LBLACK} [ ]  ${TASK} \n${LRED}"
+}
+
+# cmd performs commands with error checking
+function cmd {
+    #create log if it doesn't exist
+    if ! [[ -f $DOTFILESLOG ]]; then
+        touch $DOTFILESLOG
+    fi
+    # empty conduro.log
+    > $DOTFILESLOG
+    # hide stdout, on error we print and exit
+    if eval "$1" 1> /dev/null 2> $DOTFILESLOG; then
+        return 0 # success
+    fi
+    # read error from log and add spacing
+    printf "${OVERWRITE}${LRED} [X]  ${TASK}${LRED}\n"
+    while read line; do
+        printf "      ${line}\n"
+    done < $DOTFILESLOG
+    printf "\n"
+    # remove log file
+    rm $DOTFILESLOG
+    # exit installation
+    exit 1
+}
+
+function clearTask {
+    TASK=""
+}
+
+function taskDone {
+    printf "${OVERWRITE}${LGREEN} [✓]  ${LGREEN}${TASK}\n"
+    clearTask
+}
+
+
+set -e
+
+# Paths
+CONFIGDIR="$HOME/.config/dotfiles"
+VAULTSECRET="$HOME/.ansible-vault/vault.secret"
+DOTFILESDIR="$HOME/.dotfiles"
+SSHDIR="$HOME/.ssh"
+ISFIRST_RUN="$HOME/.dotfiles_run"
+
+# Install Ansible
+# check lsbrelease -si
+
+# Check if MacOS
+if [[ "$OSTYPE" == "darwin"* ]]; then
+        task "Installing Homebrew"
+    if ! [[ -x "$(command -v brew)" ]]; then
+        cmd '/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
+    task "Installing Ansible"
+    if ! [[ -x "$(command -v ansible)" ]]; then
+        cmd "brew install ansible"
+elif ! [[ dpkg -s ansible >/dev/null 2>&1 ]]; then
+    task "Installing Ansible"
+        cmd "sudo apt-get update"
+        cmd "sudo apt-get install -y software-properties-common"
+        cmd "sudo apt-add-repository -y ppa:ansible/ansible"
+        cmd "sudo apt-get update"
+        cmd "sudo apt-get install -y ansible"
+        cmd "sudo apt-get install python3-argcomplete"
+        cmd "sudo activate-global-python-argcomplete3"
+fi
+
+# Check if python3 and pip is installed
+if ! dpkg -s python3 >/dev/null 2>&1; then
+    task "Installing Python3"
+        cmd "sudo apt-get install -y python3"
+fi
+if ! dpkg -s python3-pip >/dev/null 2>&1; then
+    task "Installing Python3 Pip"
+        cmd "sudo apt-get install -y python3-pip"
+fi
+# Check if pip module watchdog is installed
+if ! pip3 list | grep watchdog >/dev/null 2>&1; then
+    task "Installing Python3 Watchdog"
+        cmd "pip3 install watchdog"
+fi
+
+
+# Generate SSH keys
+if ! [[ -f "$SSHDIR/authorized_keys" ]]; then
+    task "Generating SSH keys"
+        cmd "mkdir -p $SSHDIR"
+        cmd "chmod 700 $SSHDIR"
+        cmd "ssh-keygen -b 4096 -t rsa -f $SSHDIR/id_rsa -N '' -C $USER@$HOSTNAME"
+        cmd "cat $SSHDIR/id_rsa.pub >> $SSH_DIR/authorized_keys"
+fi
+
+# Clone repository
+if ! [[ -d "$DOTFILESDIR" ]]; then
+    task "Cloning repository"
+        cmd "git clone --quiet https://github.com/TechDufus/dotfiles.git $DOTFILESDIR"
+else
+    task "Updating repository"
+        cmd "git -C $DOTFILESDIR pull --quiet"
+fi
+
+pushd "$DOTFILESDIR" 2>&1 > /dev/null
+task "Updating Galaxy"
+    cmd "ansible-galaxy install -r requirements.yml"
+
+task "Running playbook"; taskDone
+if [[ -f $VAULTSECRET ]]; then
+    ansible-playbook --vault-password-file $VAULTSECRET "$DOTFILES_DIR/main.yml" "$@"
+else
+    ansible-playbook "$DOTFILESDIR/main.yml" "$@"
+fi
+
+popd 2>&1 > /dev/null
+
+if ! [[ -f "$ISFIRST_RUN" ]]; then
+    echo -e "${CHECKMARK} ${GREEN}First run complete!${NC}"
+    echo -e "${ARROW} ${CYAN}Please reboot your computer to complete the setup.${NC}"
+    touch "$ISFIRST_RUN"
+fi
+
+# vi:ft=sh:
