@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# Load Spinner
+source $(dirname "$0")/spinner
+
 # color codes
 RESTORE='\033[0m'
 NC='\033[0m'
@@ -99,7 +102,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 #         cmd "brew install ansible"
     echo "Hello Mac"
 elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
-    task "Installing Ansible"
+    task "Installing Ansible"; spinner
         cmd "export DEBIAN_FRONTEND=noninteractive"
         cmd "ln -fs /usr/share/zoneinfo/America/Argentina/Buenos_Aires /etc/localtime"
         cmd "apt-get update"
