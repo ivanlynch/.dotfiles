@@ -1,76 +1,55 @@
 #!/usr/bin/env bash
 
 # Load Spinner
-source spinner.sh
+source $(dirname "$0")/spinner.sh
 
-# color codes
-RESTORE='\033[0m'
+# Color codes - solo los que se usan
 NC='\033[0m'
-BLACK='\033[00;30m'
-RED='\033[00;31m'
 GREEN='\033[00;32m'
-YELLOW='\033[00;33m'
-BLUE='\033[00;34m'
-PURPLE='\033[00;35m'
+RED='\033[00;31m'
 CYAN='\033[00;36m'
 SEA="\\033[38;5;49m"
-LIGHTGRAY='\033[00;37m'
 LBLACK='\033[01;30m'
 LRED='\033[01;31m'
 LGREEN='\033[01;32m'
-LYELLOW='\033[01;33m'
-LBLUE='\033[01;34m'
-LPURPLE='\033[01;35m'
-LCYAN='\033[01;36m'
-WHITE='\033[01;37m'
 OVERWRITE='\e[1A\e[K'
 
-#emoji codes
-CHECKMARK="${GREEN}\xE2\x9C\x94${NC}"
-XMARK="${RED}\xE2\x9C\x96${NC}"
-PIN="${RED}\xF0\x9F\x93\x8C${NC}"
-CLOCK="${GREEN}\xE2\x8C\x9B${NC}"
+# Emoji codes - solo los que se usan
 ARROW="${SEA}\xE2\x96\xB6${NC}"
-BOOK="${RED}\xF0\x9F\x93\x8B${NC}"
-HOT="${ORANGE}\xF0\x9F\x94\xA5${NC}"
-WARNING="${RED}\xF0\x9F\x9A\xA8${NC}"
-RIGHTANGLE="${GREEN}\xE2\x88\x9F${NC}"
+XMARK="${RED}\xE2\x9C\x96${NC}"
 
-
+# Logs
 DOTFILESLOG="$HOME/.dotfiles.log"
 
-# header colorize the given argument with spacing
+# Mensaje de bienvenida
+echo -e "${ARROW} ${CYAN}Instalando dotfiles de Ivan Lynch...${NC}"
+echo "Este script sobrescribirá tu configuración actual. Se realizará un backup en ~/.dotfiles-backup"
+echo ""
+
+# Función para mostrar tareas
 function task {
-    # if task is called while a task was set, complete the previous
     if [[ $TASK != "" ]]; then
         printf "${OVERWRITE}${LGREEN} [✓]  ${LGREEN}${TASK}\n"
     fi
-    # set new task title and print
     TASK=$1
     printf "${LBLACK} [ ]  ${TASK} \n${LRED}"
 }
 
-# cmd performs commands with error checking
+# Ejecuta comandos con verificación de errores
 function cmd {
-    #create log if it doesn't exist
     if ! [[ -f $DOTFILESLOG ]]; then
         touch $DOTFILESLOG
     fi
-    # empty conduro.log
     > $DOTFILESLOG
-    # hide stdout, on error we print and exit
     if eval "$1" 1> /dev/null 2> $DOTFILESLOG; then
-        return 0 # success
+        return 0
     fi
-    # read error from log and add spacing
     printf "${OVERWRITE}${LRED} [X]  ${TASK}${LRED}\n"
     while read line; do
         printf "      ${line}\n"
     done < $DOTFILESLOG
     printf "\n"
-    # remove log file
     rm $DOTFILESLOG
-    # exit installation
     exit 1
 }
 
@@ -83,23 +62,13 @@ function taskDone {
     clearTask
 }
 
-
 set -e
 
 # Paths
-CONFIGDIR="$HOME/.config"
-VAULTSECRET="$HOME/.ansible-vault/vault.secret"
 DOTFILESDIR="$HOME/.dotfiles"
-SSHDIR="$HOME/.ssh"
 
-# Check if MacOS
+# Verificación del sistema
 if [[ "$OSTYPE" == "darwin"* ]]; then
-#         task "Installing Homebrew"
-#     if ! [[ -x "$(command -v brew)" ]]; then
-#         cmd '/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
-#     task "Installing Ansible"
-#     if ! [[ -x "$(command -v ansible)" ]]; then
-#         cmd "brew install ansible"
     echo "Hello Mac"
 elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
     task "Installing Ansible"; spinner
@@ -117,81 +86,42 @@ elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
     clearTask
 fi
 
-# Check if git is installed
-
-
-# Clone repository
+# Gestión del repositorio
 if ! [[ -d "$DOTFILESDIR" ]]; then
     task "Cloning repository"
-        cmd "git clone --quiet --bare https://github.com/ivanlynch/dotfiles.git $HOME"
+        cmd "git clone --quiet --bare https://github.com/ivanlynch/dotfiles.git $HOME/.dotfiles"
 else
     task "Updating repository"
-        cmd "git -C $HOME pull --quiet"
+        cmd "git -C $HOME/.dotfiles pull --quiet"
 fi
 
-# define config alias locally since the dotfiles
-# aren't installed on the system yet
+# Función para gestionar dotfiles
 function config {
-   git --git-dir=$HOME --work-tree=$HOME $@
+   git --git-dir=$HOME/.dotfiles/.git --work-tree=$HOME $@
 }
 
-# create a directory to backup existing dotfiles to
-mkdir -p .dotfiles-backup && \
- git df checkout 2>&1 | egrep "\s+\." | awk {'print $1'} | \
- xargs -I{} mv {} .dotfiles-backup/{}
+# Backup y checkout
+task "Realizando backup de la configuración existente"
+mkdir -p $HOME/.dotfiles-backup
 
-# checkout dotfiles from repo
-config checkout
+# Identificar archivos que serán sobrescritos y hacer backup
+config checkout 2>&1 | grep -E "^\s+\." | awk {'print $1'} | while read file; do
+    echo "  Respaldando $file a .dotfiles-backup/"
+    # Crear directorios necesarios en el backup
+    mkdir -p "$HOME/.dotfiles-backup/$(dirname "$file")"
+    # Mover el archivo al backup si existe
+    if [ -e "$HOME/$file" ]; then
+        cp -R "$HOME/$file" "$HOME/.dotfiles-backup/$file"
+    fi
+done
+taskDone
+
+# Checkout de dotfiles (sobrescribir configuración)
+task "Aplicando nueva configuración"
+config checkout -f
 config config status.showUntrackedFiles no
+taskDone
 
-
-# # Check if python3 and pip is installed
-# if ! dpkg -s python3 >/dev/null 2>&1; then
-#     task "Installing Python3"
-#         cmd "sudo apt-get install -y python3"
-# fi
-# if ! dpkg -s python3-pip >/dev/null 2>&1; then
-#     task "Installing Python3 Pip"
-#         cmd "sudo apt-get install -y python3-pip"
-# fi
-# # Check if pip module watchdog is installed
-# if ! pip3 list | grep watchdog >/dev/null 2>&1; then
-#     task "Installing Python3 Watchdog"
-#         cmd "pip3 install watchdog"
-# fi
-# 
-# 
-# # Generate SSH keys
-# if ! [[ -f "$SSHDIR/authorized_keys" ]]; then
-#     task "Generating SSH keys"
-#         cmd "mkdir -p $SSHDIR"
-#         cmd "chmod 700 $SSHDIR"
-#         cmd "ssh-keygen -b 4096 -t rsa -f $SSHDIR/id_rsa -N '' -C $USER@$HOSTNAME"
-#         cmd "cat $SSHDIR/id_rsa.pub >> $SSH_DIR/authorized_keys"
-# fi
-# 
-# # Clone repository
-# if ! [[ -d "$DOTFILESDIR" ]]; then
-#     task "Cloning repository"
-#         cmd "git clone --quiet https://github.com/TechDufus/dotfiles.git $DOTFILESDIR"
-# else
-#     task "Updating repository"
-#         cmd "git -C $DOTFILESDIR pull --quiet"
-# fi
-# 
-# pushd "$DOTFILESDIR" 2>&1 > /dev/null
-# task "Updating Galaxy"
-#     cmd "ansible-galaxy install -r requirements.yml"
-# 
-# task "Running playbook"; taskDone
-# if [[ -f $VAULTSECRET ]]; then
-#     ansible-playbook --vault-password-file $VAULTSECRET "$DOTFILES_DIR/main.yml" "$@"
-# else
-#     ansible-playbook "$DOTFILESDIR/main.yml" "$@"
-# fi
-# 
-# popd 2>&1 > /dev/null
-# 
-echo -e "${ARROW} ${CYAN}Install complete!.${NC}"
+echo -e "${ARROW} ${CYAN}Instalación completa! Tu configuración anterior ha sido respaldada en ~/.dotfiles-backup${NC}"
 
 # vi:ft=sh:
