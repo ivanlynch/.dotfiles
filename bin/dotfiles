@@ -1,127 +1,144 @@
 #!/usr/bin/env bash
 
-# Load Spinner
-source $(dirname "$0")/spinner.sh
+set -euo pipefail
 
-# Color codes - solo los que se usan
-NC='\033[0m'
-GREEN='\033[00;32m'
-RED='\033[00;31m'
-CYAN='\033[00;36m'
-SEA="\\033[38;5;49m"
-LBLACK='\033[01;30m'
-LRED='\033[01;31m'
-LGREEN='\033[01;32m'
-OVERWRITE='\e[1A\e[K'
+# Color codes
+readonly NC='\033[0m'
+readonly GREEN='\033[00;32m'
+readonly RED='\033[00;31m'
+readonly CYAN='\033[00;36m'
+readonly SEA="\\033[38;5;49m"
+readonly LBLACK='\033[01;30m'
+readonly LRED='\033[01;31m'
+readonly LGREEN='\033[01;32m'
+readonly OVERWRITE='\e[1A\e[K'
 
-# Emoji codes - solo los que se usan
-ARROW="${SEA}\xE2\x96\xB6${NC}"
-XMARK="${RED}\xE2\x9C\x96${NC}"
+# Emoji codes
+readonly ARROW="${SEA}\xE2\x96\xB6${NC}"
+readonly XMARK="${RED}\xE2\x9C\x96${NC}"
+readonly CHECK="${GREEN}\xE2\x9C\x94${NC}"
 
-# Logs
-DOTFILESLOG="$HOME/.dotfiles.log"
+# Constants
+readonly DOTFILESLOG="$HOME/.dotfiles.log"
+readonly DOTFILESDIR="$HOME/.dotfiles"
+readonly BACKUP_DIR="$HOME/.dotfiles-backup"
 
-# Mensaje de bienvenida
-echo -e "${ARROW} ${CYAN}Instalando dotfiles de Ivan Lynch...${NC}"
-echo "Este script sobrescribirá tu configuración actual. Se realizará un backup en ~/.dotfiles-backup"
-echo ""
-
-# Función para mostrar tareas
-function task {
-    if [[ $TASK != "" ]]; then
-        printf "${OVERWRITE}${LGREEN} [✓]  ${LGREEN}${TASK}\n"
+# Función para mostrar tareas con mejor manejo de errores
+task() {
+    if [[ -n "${TASK:-}" ]]; then
+        printf "%b%b [ ]  %b%b\n" "${OVERWRITE}" "${LGREEN}" "${LGREEN}" "${TASK}"
     fi
     TASK=$1
-    printf "${LBLACK} [ ]  ${TASK} \n${LRED}"
+    printf "%b [ ]  %s \n%b" "${LBLACK}" "${TASK}" "${LRED}"
 }
 
-# Ejecuta comandos con verificación de errores
-function cmd {
-    if ! [[ -f $DOTFILESLOG ]]; then
-        touch $DOTFILESLOG
+# Función para marcar tareas como completadas
+task_done() {
+    if [[ -n "${TASK:-}" ]]; then
+        printf "%b%b [%b]  %b%b\n" "${OVERWRITE}" "${LGREEN}" "${CHECK}" "${LGREEN}" "${TASK}" "${NC}"
+        unset TASK
     fi
-    > $DOTFILESLOG
-    if eval "$1" 1> /dev/null 2> $DOTFILESLOG; then
+}
+
+# Función mejorada para ejecutar comandos con mejor logging
+cmd() {
+    local command="$1"
+    local log_file="${DOTFILESLOG}"
+    
+    # Asegurar que el archivo de log existe
+    touch "${log_file}"
+    > "${log_file}"
+    
+    if eval "${command}" 1> /dev/null 2> "${log_file}"; then
         return 0
     fi
-    printf "${OVERWRITE}${LRED} [X]  ${TASK}${LRED}\n"
-    while read line; do
-        printf "      ${line}\n"
-    done < $DOTFILESLOG
+    
+    printf "%b%b [X]  %s%b\n" "${OVERWRITE}" "${LRED}" "${TASK}" "${LRED}"
+    while IFS= read -r line; do
+        printf "      %s\n" "${line}"
+    done < "${log_file}"
     printf "\n"
-    rm $DOTFILESLOG
+    rm "${log_file}"
     exit 1
 }
 
-function clearTask {
-    TASK=""
+# Función para gestionar dotfiles con mejor manejo de errores
+config() {
+    git --git-dir="${DOTFILESDIR}/.git" --work-tree="${HOME}" "$@"
 }
 
-function taskDone {
-    printf "${OVERWRITE}${LGREEN} [✓]  ${LGREEN}${TASK}\n"
-    clearTask
+# Función para realizar backup de manera segura
+backup_file() {
+    local file="$1"
+    local backup_path="${BACKUP_DIR}/${file}"
+    
+    if [[ -e "${HOME}/${file}" ]]; then
+        mkdir -p "$(dirname "${backup_path}")"
+        cp -R "${HOME}/${file}" "${backup_path}"
+        return 0
+    fi
+    return 1
 }
 
-set -e
-
-# Paths
-DOTFILESDIR="$HOME/.dotfiles"
+# Función para verificar si hay cambios en el repositorio
+check_repo_changes() {
+    local current_commit
+    local remote_commit
+    
+    current_commit=$(git -C "${DOTFILESDIR}" rev-parse HEAD)
+    git -C "${DOTFILESDIR}" fetch --quiet
+    remote_commit=$(git -C "${DOTFILESDIR}" rev-parse @{u})
+    
+    if [[ "${current_commit}" == "${remote_commit}" ]]; then
+        return 1
+    fi
+    return 0
+}
 
 # Verificación del sistema
-if [[ "$OSTYPE" == "darwin"* ]]; then
-    echo "Hello Mac"
-elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
-    task "Installing Ansible"; spinner
-        cmd "export DEBIAN_FRONTEND=noninteractive"
-        cmd "ln -fs /usr/share/zoneinfo/America/Argentina/Buenos_Aires /etc/localtime"
-        cmd "apt-get update"
-        cmd "apt-get upgrade"
-        cmd "apt-get install -y software-properties-common"
-        cmd "apt-add-repository -y ppa:ansible/ansible"
-        cmd "apt-get install -y tzdata apt-utils"
-        cmd "dpkg-reconfigure -f noninteractive tzdata >/dev/null 2>&1"
-        cmd "apt-get update"
-        cmd "apt-get install -y ansible"
-    taskDone
-    clearTask
+if [[ "${OSTYPE}" == "darwin"* ]]; then
+    : # No action needed for Mac
+elif [[ "${OSTYPE}" == "linux-gnu"* ]]; then
+    task "Installing Ansible"
+    cmd "export DEBIAN_FRONTEND=noninteractive"
+    cmd "apt-get update"
+    cmd "apt-get upgrade -y"
+    cmd "apt-get install -y ansible"
+    task_done
 fi
 
 # Gestión del repositorio
-if ! [[ -d "$DOTFILESDIR" ]]; then
+if ! [[ -d "${DOTFILESDIR}" ]]; then
     task "Cloning repository"
-        cmd "git clone --quiet --bare https://github.com/ivanlynch/dotfiles.git $HOME/.dotfiles"
+    cmd "git clone --quiet --bare https://github.com/ivanlynch/dotfiles.git ${DOTFILESDIR}"
+    task_done
 else
-    task "Updating repository"
-        cmd "git -C $HOME/.dotfiles pull --quiet"
+    if check_repo_changes; then
+        task "Updating repository"
+        cmd "git -C ${DOTFILESDIR} pull --quiet"
+        task_done
+    else
+        echo -e "${ARROW} ${CYAN}Tu configuración está actualizada${NC}"
+        exit 0
+    fi
 fi
-
-# Función para gestionar dotfiles
-function config {
-   git --git-dir=$HOME/.dotfiles/.git --work-tree=$HOME $@
-}
 
 # Backup y checkout
 task "Realizando backup de la configuración existente"
-mkdir -p $HOME/.dotfiles-backup
+mkdir -p "${BACKUP_DIR}"
 
-# Identificar archivos que serán sobrescritos y hacer backup
-config checkout 2>&1 | grep -E "^\s+\." | awk {'print $1'} | while read file; do
-    echo "  Respaldando $file a .dotfiles-backup/"
-    # Crear directorios necesarios en el backup
-    mkdir -p "$HOME/.dotfiles-backup/$(dirname "$file")"
-    # Mover el archivo al backup si existe
-    if [ -e "$HOME/$file" ]; then
-        cp -R "$HOME/$file" "$HOME/.dotfiles-backup/$file"
+# Identificar y respaldar archivos que serán sobrescritos
+config checkout 2>&1 | grep -E "^\s+\." | awk '{print $1}' | while IFS= read -r file; do
+    if backup_file "${file}"; then
+        echo "  Respaldando ${file} a .dotfiles-backup/"
     fi
 done
-taskDone
+task_done
 
 # Checkout de dotfiles (sobrescribir configuración)
 task "Aplicando nueva configuración"
 config checkout -f
 config config status.showUntrackedFiles no
-taskDone
+task_done
 
-echo -e "${ARROW} ${CYAN}Instalación completa! Tu configuración anterior ha sido respaldada en ~/.dotfiles-backup${NC}"
-
-# vi:ft=sh:
+echo -e "${ARROW} ${CYAN}Instalación completa! Tu configuración anterior ha sido respaldada en ${BACKUP_DIR}${NC}"
