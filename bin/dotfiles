@@ -95,22 +95,78 @@ check_repo_changes() {
     return 0
 }
 
+# Detección de sistema operativo
+
+detect_os() {
+    case "$OSTYPE" in
+        linux-gnu*)
+            if grep -qi microsoft /proc/version 2>/dev/null; then
+                OS="wsl"
+            else
+                OS="linux"
+            fi
+            ;;
+        darwin*)
+            OS="mac"
+            ;;
+        cygwin*|msys*|win32*)
+            OS="windows"
+            ;;
+        *)
+            OS="unknown"
+            ;;
+    esac
+}
+
+detect_os
+
 # Verificación del sistema
-if [[ "${OSTYPE}" == "darwin"* ]]; then
+if [[ "$OS" == "mac" ]]; then
     : # No action needed for Mac
-elif [[ "${OSTYPE}" == "linux-gnu"* ]]; then
+elif [[ "$OS" == "linux" ]]; then
     task "Installing Ansible"
     cmd "export DEBIAN_FRONTEND=noninteractive"
     cmd "apt-get update"
     cmd "apt-get upgrade -y"
     cmd "apt-get install -y ansible"
     task_done
+elif [[ "$OS" == "wsl" ]]; then
+    task "Detectado Windows Subsystem for Linux (WSL)"
+    # Instalar openssh-client si no está instalado
+    if ! command -v ssh >/dev/null 2>&1; then
+        cmd "apt-get update"
+        cmd "apt-get install -y openssh-client"
+    fi
+    # Generar clave SSH si no existe
+    if [[ ! -f "$HOME/.ssh/id_ed25519" ]]; then
+        task "Generando clave SSH para GitHub"
+        ssh-keygen -t ed25519 -C "$(whoami)@$(hostname)" -f "$HOME/.ssh/id_ed25519" -N ""
+        task_done
+    fi
+    # Mostrar la clave pública para agregar a GitHub
+    task "Agrega esta clave pública a GitHub (https://github.com/settings/ssh/new):"
+    cat "$HOME/.ssh/id_ed25519.pub"
+    echo
+    task_done
+    task_done
+elif [[ "$OS" == "windows" ]]; then
+    task "Detectado Windows nativo"
+    # Puedes agregar comandos específicos para Windows aquí
+    task_done
+else
+    echo -e "${XMARK} ${RED}Sistema operativo no soportado${NC}"
+    exit 1
 fi
 
 # Gestión del repositorio
 if ! [[ -d "${DOTFILESDIR}" ]]; then
     task "Cloning repository"
-    cmd "git clone --quiet --bare https://github.com/ivanlynch/dotfiles.git ${DOTFILESDIR}"
+    # Usar SSH en vez de HTTPS si estamos en WSL
+    if [[ "$OS" == "wsl" ]]; then
+        cmd "git clone --quiet --bare git@github.com:ivanlynch/.dotfiles.git ${DOTFILESDIR}"
+    else
+        cmd "git clone --quiet --bare https://github.com/ivanlynch/.dotfiles.git ${DOTFILESDIR}"
+    fi
     task_done
 else
     if check_repo_changes; then
