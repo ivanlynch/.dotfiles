@@ -36,6 +36,15 @@ if [[ ! -f ./Dockerfile ]]; then
    exit 1
 fi
 
-echo "Construyendo y ejecutando contenedor Docker..."
-docker build . -f Dockerfile -t clean && docker run --rm -it clean
+# Detectar la arquitectura del sistema
+ARCH=$(uname -m)
+if [[ "$ARCH" == "arm64" ]]; then
+    echo "Detectada arquitectura ARM64, usando imagen específica..."
+    docker build . -f Dockerfile -t clean --build-arg TARGETPLATFORM=linux/arm64/v8
+else
+    echo "Detectada arquitectura x86_64, usando imagen estándar..."
+    docker build . -f Dockerfile -t clean --build-arg TARGETPLATFORM=linux/amd64
+fi
+
+docker run --rm -it clean
 

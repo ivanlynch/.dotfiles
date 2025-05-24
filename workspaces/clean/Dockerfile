@@ -1,4 +1,6 @@
-FROM archlinux/archlinux:latest
+# Definir argumento de construcción para la plataforma
+ARG TARGETPLATFORM
+FROM --platform=${TARGETPLATFORM} archlinux/archlinux:latest
 
 ENV USER_NAME=ivanlynch
 
@@ -10,7 +12,6 @@ RUN pacman -Syu --noconfirm && \
 RUN useradd -m -G wheel -s /bin/zsh $USER_NAME && \
     echo "$USER_NAME:$USER_NAME" | chpasswd && \
     sed -i '/%wheel ALL=(ALL:ALL) ALL/s/^#//' /etc/sudoers
-
 
 WORKDIR /home/$USER_NAME
 USER $USER_NAME
