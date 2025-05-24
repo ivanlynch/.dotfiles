@@ -1,4 +1,4 @@
-FROM archlinux:latest
+FROM archlinux/archlinux:latest
 
 ENV USER_NAME=ivanlynch
 
