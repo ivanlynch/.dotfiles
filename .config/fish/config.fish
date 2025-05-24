@@ -24,6 +24,23 @@ if status is-interactive
         alias cd="z"
     end
     
+    # Aliases from zshrc
+    alias config="cd ~/.config/nvim && nvim ."
+    alias dotfiles="git --git-dir=$HOME/.dotfiles --work-tree=$HOME"
+    alias tmuxconf="nvim $HOME/.tmux.conf"
+    alias itermconf="open $HOME/.config/iterm2"
+    alias ws="cd ~/workspaces"
+    alias an="cd ~/ansible"
+    alias clean-env="chmod +x ~/workspaces/clean/init.sh && ~/workspaces/clean/init.sh"
+    
+    # Load current dev folder based on the OS
+    switch (uname)
+        case Darwin
+            alias dev="cd ~/dev"
+        case Linux
+            alias dev="cd /mnt/c/Users/IvanL/dev"
+    end
+    
     alias surf="/Applications/Windsurf.app/Contents/MacOS/Electron"
 end
 
@@ -60,3 +77,35 @@ end
 
 # Add Windsurf to path
 fish_add_path -gP /Applications/Windsurf.app/Contents/MacOS
+
+# Java Setup
+fish_add_path -gP "/opt/homebrew/opt/openjdk@11/bin"
+
+# Android Setup
+set -gx ANDROID_HOME "$HOME/Library/Android/sdk"
+set -gx ANDROID_SDK_ROOT "$HOME/Library/Android/sdk"
+fish_add_path -gP "$ANDROID_HOME/emulator"
+fish_add_path -gP "$ANDROID_HOME/tools"
+fish_add_path -gP "$ANDROID_HOME/tools/bin"
+fish_add_path -gP "$ANDROID_HOME/platform-tools"
+
+# Pipx path
+fish_add_path -gP "$HOME/.local/bin"
+
+# Pyenv Config
+set -gx PYENV_ROOT "$HOME/.pyenv"
+if not contains -- "$PYENV_ROOT/bin" $PATH
+    fish_add_path -gP "$PYENV_ROOT/bin"
+end
+if type -q pyenv
+    pyenv init - | source
+end
+
+# Curl from homebrew
+fish_add_path -gP "/opt/homebrew/opt/curl/bin"
+
+# Puppeteer
+set -gx PUPPETEER_SKIP_CHROMIUM_DOWNLOAD "true"
+if type -q chromium
+    set -gx PUPPETEER_EXECUTABLE_PATH (which chromium)
+end
