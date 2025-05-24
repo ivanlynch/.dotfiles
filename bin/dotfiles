@@ -95,6 +95,64 @@ check_repo_changes() {
     return 0
 }
 
+# Función para configurar el perfil de PowerShell
+configure_powershell() {
+    # Crear directorios necesarios
+    mkdir -p "$HOME/.config/powershell"
+    
+    # Crear archivo de perfil si no existe
+    if [[ ! -f "$HOME/.config/powershell/profile.ps1" ]]; then
+        echo "# PowerShell Profile configurado por dotfiles" > "$HOME/.config/powershell/profile.ps1"
+        echo "Write-Host 'Perfil cargado desde .config/powershell/profile.ps1' -ForegroundColor Green" >> "$HOME/.config/powershell/profile.ps1"
+    fi
+    
+    # Determinar la ruta del perfil de PowerShell
+    local ps_profile_path="$HOME/Documents/WindowsPowerShell"
+    local ps_core_path="$HOME/Documents/PowerShell"
+    
+    # Configurar Windows PowerShell (5.1)
+    mkdir -p "$ps_profile_path"
+    echo ". `$env:USERPROFILE\\.config\\powershell\\profile.ps1" > "$ps_profile_path/profile.ps1"
+    
+    # Configurar PowerShell Core (6+)
+    mkdir -p "$ps_core_path"
+    echo ". `$env:USERPROFILE\\.config\\powershell\\profile.ps1" > "$ps_core_path/profile.ps1"
+    
+    # Configurar Windows Terminal si existe
+    local wt_settings="$HOME/AppData/Local/Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json"
+    local wt_settings_alt="$HOME/AppData/Local/Microsoft/Windows Terminal/settings.json"
+    
+    if [[ -f "$wt_settings" ]] || [[ -f "$wt_settings_alt" ]]; then
+        task "Configurando Windows Terminal"
+        
+        local settings_file=""
+        if [[ -f "$wt_settings" ]]; then
+            settings_file="$wt_settings"
+        else
+            settings_file="$wt_settings_alt"
+        fi
+        
+        # Hacer backup del archivo de configuración
+        cp "$settings_file" "$BACKUP_DIR/windows_terminal_settings.json"
+        
+        # Modificar la configuración con PowerShell
+        powershell.exe -NoProfile -Command "
+            \$settings = Get-Content -Path '$settings_file' -Raw | ConvertFrom-Json;
+            \$powershell_profile = \$settings.profiles.list | Where-Object { \$_.name -eq 'Windows PowerShell' -or \$_.name -eq 'PowerShell' };
+            if (\$powershell_profile) {
+                foreach(\$profile in \$powershell_profile) {
+                    \$profile.commandline = 'powershell.exe -NoLogo -NoExit -Command . \"\$env:USERPROFILE\\.config\\powershell\\profile.ps1\"';
+                }
+                \$settings | ConvertTo-Json -Depth 32 | Set-Content -Path '$settings_file';
+                Write-Host 'Configuracion de Windows Terminal actualizada correctamente.';
+            } else {
+                Write-Host 'No se encontró un perfil de PowerShell en Windows Terminal.';
+            }
+        "
+        task_done
+    fi
+}
+
 # Detección de sistema operativo
 
 detect_os() {
@@ -151,7 +209,14 @@ elif [[ "$OS" == "wsl" ]]; then
     task_done
 elif [[ "$OS" == "windows" ]]; then
     task "Detectado Windows nativo"
-    # Puedes agregar comandos específicos para Windows aquí
+    # Verificar si PowerShell está disponible
+    if command -v powershell.exe >/dev/null 2>&1; then
+        task "Configurando perfil de PowerShell en .config"
+        configure_powershell
+        task_done
+    else
+        echo -e "${ARROW} ${CYAN}PowerShell no encontrado. Saltando configuración de PowerShell.${NC}"
+    fi
     task_done
 else
     echo -e "${XMARK} ${RED}Sistema operativo no soportado${NC}"
