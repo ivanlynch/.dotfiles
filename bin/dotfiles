@@ -45,7 +45,7 @@ backup_file() {
 # Gestión del repositorio
 if ! [[ -d "${DOTFILESDIR}" ]]; then
     log "info" "Clonando repositorio..."
-    if ! git clone --quiet --bare git@github.com:ivanlynch/.dotfiles.git "${DOTFILESDIR}"; then
+    if ! git clone --quiet --bare https://github.com/ivanlynch/.dotfiles.git "${DOTFILESDIR}"; then
         log "error" "Error al clonar el repositorio"
         exit 1
     fi
