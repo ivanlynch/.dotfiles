@@ -26,7 +26,7 @@ log() {
 
 # Función para gestionar dotfiles
 config() {
-    git --git-dir="${DOTFILESDIR}/.git" --work-tree="${HOME}" "$@"
+    git --git-dir="${DOTFILESDIR}" --work-tree="${HOME}" "$@"
 }
 
 # Función para realizar backup
@@ -52,42 +52,26 @@ if ! [[ -d "${DOTFILESDIR}" ]]; then
     log "success" "Repositorio clonado"
 else
     log "info" "Actualizando repositorio..."
-    if ! cd "${DOTFILESDIR}"; then
-        log "error" "Error al acceder al directorio ${DOTFILESDIR}"
-        exit 1
-    fi
     
-    # Guardar cambios locales si existen
-    if ! git diff --quiet || ! git diff --cached --quiet; then
-        if ! git stash push -m "dotfiles: cambios locales guardados automáticamente" > /dev/null; then
-            log "error" "Error al guardar cambios locales"
-            exit 1
-        fi
-    fi
-
     # Actualizar repositorio
-    if ! git remote update origin > /dev/null; then
+    if ! git --git-dir="${DOTFILESDIR}" fetch origin > /dev/null; then
         log "error" "Error al actualizar el repositorio remoto"
         exit 1
     fi
 
-    if ! git update-ref refs/heads/main origin/main > /dev/null; then
+    # Obtener el SHA del HEAD remoto
+    remote_head=$(git --git-dir="${DOTFILESDIR}" ls-remote origin HEAD | awk '{print $1}')
+    if [[ -z "$remote_head" ]]; then
+        log "error" "No se pudo obtener la referencia del HEAD remoto"
+        exit 1
+    fi
+
+    # Actualizar la referencia local
+    if ! git --git-dir="${DOTFILESDIR}" update-ref refs/heads/main "$remote_head" > /dev/null; then
         log "error" "Error al actualizar la referencia local"
         exit 1
     fi
 
-    # Restaurar cambios locales si existían
-    if git stash list | grep -q "dotfiles: cambios locales guardados automáticamente"; then
-        if ! git stash pop > /dev/null; then
-            log "error" "Error al restaurar cambios locales"
-            exit 1
-        fi
-    fi
-
-    if ! cd - > /dev/null; then
-        log "error" "Error al volver al directorio anterior"
-        exit 1
-    fi
     log "success" "Repositorio actualizado"
 fi
 
@@ -135,5 +119,37 @@ for dir in "$HOME/.config" "$HOME/workspaces/clean" "$HOME/ansible/roles/neovim"
         exit 1
     fi
 done
+
+# Configurar alias en el shell actual
+if [[ -f "$HOME/.config/fish/config.fish" ]]; then
+    # Asegurarse de que el directorio de funciones de Fish existe
+    mkdir -p "$HOME/.config/fish/functions"
+    
+    # Crear una función temporal para recargar la configuración
+    cat > "$HOME/.config/fish/functions/reload_config.fish" << 'EOF'
+function reload_config
+    source ~/.config/fish/config.fish
+end
+EOF
+    
+    # Agregar los alias si no existen
+    if ! grep -q "alias dotfiles=" "$HOME/.config/fish/config.fish"; then
+        echo 'alias dotfiles="git --git-dir=$HOME/.dotfiles --work-tree=$HOME"' >> "$HOME/.config/fish/config.fish"
+    fi
+    if ! grep -q "alias dotfiles-pull=" "$HOME/.config/fish/config.fish"; then
+        echo 'alias dotfiles-pull="$HOME/bin/dotfiles-sync"' >> "$HOME/.config/fish/config.fish"
+    fi
+    
+    # Recargar la configuración de Fish
+    fish -c "source ~/.config/fish/config.fish"
+elif [[ -f "$HOME/.zshrc" ]]; then
+    if ! grep -q "alias dotfiles=" "$HOME/.zshrc"; then
+        echo 'alias dotfiles="git --git-dir=$HOME/.dotfiles --work-tree=$HOME"' >> "$HOME/.zshrc"
+    fi
+    if ! grep -q "alias dotfiles-pull=" "$HOME/.zshrc"; then
+        echo 'alias dotfiles-pull="$HOME/bin/dotfiles-sync"' >> "$HOME/.zshrc"
+    fi
+    source "$HOME/.zshrc"
+fi
 
 log "success" "Instalación completa! Tu configuración anterior ha sido respaldada en ${BACKUP_DIR}"
