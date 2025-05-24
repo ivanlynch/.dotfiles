@@ -84,11 +84,16 @@ fi
 
 # Backup de archivos existentes
 log "info" "Verificando archivos a respaldar..."
+
+# Intentar checkout inicial
 if ! config checkout > /dev/null 2>&1; then
+    log "info" "Detectados archivos existentes, procediendo con backup..."
+    
     # Obtener lista de archivos modificados
     files_to_backup=$(config checkout 2>&1 | grep -E "^\s+\." | awk '{print $1}')
     
     if [[ -n "$files_to_backup" ]]; then
+        log "info" "Iniciando backup de archivos..."
         while IFS= read -r file; do
             if backup_file "${file}"; then
                 log "info" "Respaldando ${file}"
