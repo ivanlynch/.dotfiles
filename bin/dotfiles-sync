@@ -1,0 +1,53 @@
+#!/bin/bash
+# filepath: /home/ivanlynch/dev/.dotfiles/bin/dotfiles-sync
+# Script para sincronizar dotfiles con seguridad
+
+set -e
+
+# Colores para output
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+CYAN='\033[0;36m'
+NC='\033[0m' # No Color
+
+# Asegurarse de que existe el directorio ~/.dotfiles
+if [[ ! -d "$HOME/.dotfiles" ]]; then
+    echo -e "${RED}ERROR: No se encontró el repositorio .dotfiles.${NC}"
+    echo -e "Ejecuta primero: git clone --bare https://github.com/ivanlynch/.dotfiles.git ~/.dotfiles"
+    exit 1
+fi
+
+# Crear directorio de backup
+BACKUP_DIR="$HOME/.ansible-backup-$(date +%Y%m%d%H%M%S)"
+mkdir -p "$BACKUP_DIR"
+
+# Hacer backup del directorio ansible si existe
+if [[ -d "$HOME/ansible" ]]; then
+    echo -e "${CYAN}Creando backup de ansible en $BACKUP_DIR...${NC}"
+    cp -r "$HOME/ansible" "$BACKUP_DIR/"
+fi
+
+# Ejecutar git pull
+echo -e "${CYAN}Sincronizando dotfiles...${NC}"
+git --git-dir="$HOME/.dotfiles" --work-tree="$HOME" pull
+
+# Verificar si el directorio ansible existe después del pull
+if [[ ! -d "$HOME/ansible" ]] && [[ -d "$BACKUP_DIR/ansible" ]]; then
+    echo -e "${CYAN}Restaurando directorio ansible desde backup...${NC}"
+    cp -r "$BACKUP_DIR/ansible" "$HOME/"
+fi
+
+# Si el directorio ansible no existe ni en backup ni después del pull, crearlo
+if [[ ! -d "$HOME/ansible" ]]; then
+    echo -e "${CYAN}Creando estructura básica de ansible...${NC}"
+    mkdir -p "$HOME/ansible/roles/neovim"
+    mkdir -p "$HOME/ansible/roles/zsh"
+    
+    echo "---" > "$HOME/ansible/roles/neovim/main.yml"
+    echo "---" > "$HOME/ansible/roles/neovim/ubuntu.yml"
+    echo "---" > "$HOME/ansible/roles/zsh/main.yml"
+    echo "---" > "$HOME/ansible/roles/zsh/ubuntu.yml"
+fi
+
+echo -e "${GREEN}¡Dotfiles sincronizados correctamente!${NC}"
+echo -e "${CYAN}Si hubo un backup, está disponible en: $BACKUP_DIR${NC}"

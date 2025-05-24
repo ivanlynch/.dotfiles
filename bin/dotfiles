@@ -309,4 +309,35 @@ config checkout -f
 config config status.showUntrackedFiles no
 task_done
 
+# Asegurar que las carpetas críticas existan y se copien correctamente
+task "Verificando directorios esenciales"
+
+# Directorio ansible
+if [[ ! -d "$HOME/ansible" ]]; then
+    echo "  Creando directorio ansible"
+    mkdir -p "$HOME/ansible/roles/neovim"
+    mkdir -p "$HOME/ansible/roles/zsh"
+    echo "---" > "$HOME/ansible/roles/neovim/main.yml"
+    echo "---" > "$HOME/ansible/roles/neovim/ubuntu.yml"
+    echo "---" > "$HOME/ansible/roles/zsh/main.yml"
+    echo "---" > "$HOME/ansible/roles/zsh/ubuntu.yml"
+fi
+
+# Directorio workspaces/clean
+if [[ ! -d "$HOME/workspaces/clean" ]]; then
+    echo "  Creando directorio workspaces/clean"
+    mkdir -p "$HOME/workspaces/clean"
+    # Copiar archivos esenciales si existen en el repo
+    if [[ -d "$HOME/.dotfiles/workspaces/clean" ]]; then
+        cp -r "$HOME/.dotfiles/workspaces/clean/"* "$HOME/workspaces/clean/"
+    fi
+fi
+
+# Directorio .config (solo verificar)
+if [[ ! -d "$HOME/.config" ]]; then
+    echo "  Creando directorio .config"
+    mkdir -p "$HOME/.config"
+fi
+task_done
+
 echo -e "${ARROW} ${CYAN}Instalación completa! Tu configuración anterior ha sido respaldada en ${BACKUP_DIR}${NC}"

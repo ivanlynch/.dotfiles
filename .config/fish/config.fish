@@ -83,6 +83,7 @@ if status is-interactive
     alias edit="nvim ~/.config/fish/config.fish"
     alias config="cd ~/.config/nvim; nvim ."
     alias dotfiles="git --git-dir=$HOME/.dotfiles --work-tree=$HOME"
+    alias dotfiles-pull="$HOME/bin/dotfiles-sync"
     alias tmuxconf="nvim $HOME/.tmux.conf"
     alias itermconf="open $HOME/.config/iterm2"
     alias ws="cd ~/workspaces"
