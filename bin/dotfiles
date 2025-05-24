@@ -7,67 +7,29 @@ readonly NC='\033[0m'
 readonly GREEN='\033[00;32m'
 readonly RED='\033[00;31m'
 readonly CYAN='\033[00;36m'
-readonly SEA="\\033[38;5;49m"
-readonly LBLACK='\033[01;30m'
-readonly LRED='\033[01;31m'
-readonly LGREEN='\033[01;32m'
-readonly OVERWRITE='\e[1A\e[K'
-
-# Emoji codes
-readonly ARROW="${SEA}\xE2\x96\xB6${NC}"
-readonly XMARK="${RED}\xE2\x9C\x96${NC}"
-readonly CHECK="${GREEN}\xE2\x9C\x94${NC}"
 
 # Constants
 readonly DOTFILESLOG="$HOME/.dotfiles.log"
 readonly DOTFILESDIR="$HOME/.dotfiles"
 readonly BACKUP_DIR="$HOME/.dotfiles-backup"
 
-# Función para mostrar tareas con mejor manejo de errores
-task() {
-    if [[ -n "${TASK:-}" ]]; then
-        printf "%b%b [ ]  %b%b\n" "${OVERWRITE}" "${LGREEN}" "${LGREEN}" "${TASK}"
-    fi
-    TASK=$1
-    printf "%b [ ]  %s \n%b" "${LBLACK}" "${TASK}" "${LRED}"
+# Función simple para mostrar mensajes
+log() {
+    local type="$1"
+    local message="$2"
+    case $type in
+        info) echo -e "${CYAN}▶${NC} ${message}" ;;
+        success) echo -e "${GREEN}✔${NC} ${message}" ;;
+        error) echo -e "${RED}✖${NC} ${message}" ;;
+    esac
 }
 
-# Función para marcar tareas como completadas
-task_done() {
-    if [[ -n "${TASK:-}" ]]; then
-        printf "%b%b [%b]  %b%b\n" "${OVERWRITE}" "${LGREEN}" "${CHECK}" "${LGREEN}" "${TASK}" "${NC}"
-        unset TASK
-    fi
-}
-
-# Función mejorada para ejecutar comandos con mejor logging
-cmd() {
-    local command="$1"
-    local log_file="${DOTFILESLOG}"
-    
-    # Asegurar que el archivo de log existe
-    touch "${log_file}"
-    > "${log_file}"
-    
-    if eval "${command}" 1> /dev/null 2> "${log_file}"; then
-        return 0
-    fi
-    
-    printf "%b%b [X]  %s%b\n" "${OVERWRITE}" "${LRED}" "${TASK}" "${LRED}"
-    while IFS= read -r line; do
-        printf "      %s\n" "${line}"
-    done < "${log_file}"
-    printf "\n"
-    rm "${log_file}"
-    exit 1
-}
-
-# Función para gestionar dotfiles con mejor manejo de errores
+# Función para gestionar dotfiles
 config() {
     git --git-dir="${DOTFILESDIR}/.git" --work-tree="${HOME}" "$@"
 }
 
-# Función para realizar backup de manera segura
+# Función para realizar backup
 backup_file() {
     local file="$1"
     local backup_path="${BACKUP_DIR}/${file}"
@@ -80,264 +42,98 @@ backup_file() {
     return 1
 }
 
-# Función para verificar si hay cambios en el repositorio
-check_repo_changes() {
-    local current_commit
-    local remote_commit
-    
-    # Para un repositorio bare, necesitamos una verificación diferente
-    current_commit=$(git -C "${DOTFILESDIR}" show-ref -s --heads main 2>/dev/null || echo "")
-    git -C "${DOTFILESDIR}" fetch --quiet origin
-    remote_commit=$(git -C "${DOTFILESDIR}" ls-remote origin main | awk '{print $1}')
-    
-    if [[ -z "${current_commit}" || -z "${remote_commit}" ]]; then
-        # Si alguno está vacío, asumimos que hay cambios (para forzar actualización)
-        return 0
-    fi
-    
-    if [[ "${current_commit}" == "${remote_commit}" ]]; then
-        return 1
-    fi
-    return 0
-}
-
-# Función para configurar el perfil de PowerShell
-configure_powershell() {
-    # Crear directorios necesarios
-    mkdir -p "$HOME/.config/powershell"
-    
-    # Crear archivo de perfil si no existe
-    if [[ ! -f "$HOME/.config/powershell/profile.ps1" ]]; then
-        echo "# PowerShell Profile configurado por dotfiles" > "$HOME/.config/powershell/profile.ps1"
-        echo "Write-Host 'Perfil cargado desde .config/powershell/profile.ps1' -ForegroundColor Green" >> "$HOME/.config/powershell/profile.ps1"
-    fi
-    
-    # Determinar la ruta del perfil de PowerShell
-    local ps_profile_path="$HOME/Documents/WindowsPowerShell"
-    local ps_core_path="$HOME/Documents/PowerShell"
-    
-    # Configurar Windows PowerShell (5.1)
-    mkdir -p "$ps_profile_path"
-    echo ". `$env:USERPROFILE\\.config\\powershell\\profile.ps1" > "$ps_profile_path/profile.ps1"
-    
-    # Configurar PowerShell Core (6+)
-    mkdir -p "$ps_core_path"
-    echo ". `$env:USERPROFILE\\.config\\powershell\\profile.ps1" > "$ps_core_path/profile.ps1"
-    
-    # Configurar Windows Terminal si existe
-    local wt_settings="$HOME/AppData/Local/Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json"
-    local wt_settings_alt="$HOME/AppData/Local/Microsoft/Windows Terminal/settings.json"
-    
-    if [[ -f "$wt_settings" ]] || [[ -f "$wt_settings_alt" ]]; then
-        task "Configurando Windows Terminal"
-        
-        local settings_file=""
-        if [[ -f "$wt_settings" ]]; then
-            settings_file="$wt_settings"
-        else
-            settings_file="$wt_settings_alt"
-        fi
-        
-        # Hacer backup del archivo de configuración
-        cp "$settings_file" "$BACKUP_DIR/windows_terminal_settings.json"
-        
-        # Modificar la configuración con PowerShell
-        powershell.exe -NoProfile -Command "
-            \$settings = Get-Content -Path '$settings_file' -Raw | ConvertFrom-Json;
-            \$powershell_profile = \$settings.profiles.list | Where-Object { \$_.name -eq 'Windows PowerShell' -or \$_.name -eq 'PowerShell' };
-            if (\$powershell_profile) {
-                foreach(\$profile in \$powershell_profile) {
-                    \$profile.commandline = 'powershell.exe -NoLogo -NoExit -Command . \"\$env:USERPROFILE\\.config\\powershell\\profile.ps1\"';
-                }
-                \$settings | ConvertTo-Json -Depth 32 | Set-Content -Path '$settings_file';
-                Write-Host 'Configuracion de Windows Terminal actualizada correctamente.';
-            } else {
-                Write-Host 'No se encontró un perfil de PowerShell en Windows Terminal.';
-            }
-        "
-        task_done
-    fi
-}
-
-# Detección de sistema operativo
-
-detect_os() {
-    # Debug print for /proc/version
-    echo "[DEBUG] /proc/version: $(cat /proc/version 2>/dev/null)" >&2
-    case "$OSTYPE" in
-        linux-gnu*)
-            if grep -qi microsoft /proc/version 2>/dev/null; then
-                OS="wsl"
-            else
-                OS="linux"
-            fi
-            ;;
-        darwin*)
-            OS="mac"
-            ;;
-        cygwin*|msys*|win32*)
-            OS="windows"
-            ;;
-        *)
-            OS="unknown"
-            ;;
-    esac
-}
-
-detect_pkg_manager() {
-    if command -v apt-get >/dev/null 2>&1; then
-        PKG="apt-get"
-    elif command -v dnf >/dev/null 2>&1; then
-        PKG="dnf"
-    elif command -v pacman >/dev/null 2>&1; then
-        PKG="pacman"
-    else
-        PKG="unknown"
-    fi
-}
-
-detect_os
-detect_pkg_manager
-
-# Verificación del sistema
-if [[ "$OS" == "mac" ]]; then
-    : # No action needed for Mac
-elif [[ "$OS" == "linux" ]]; then
-    task "Installing Ansible"
-    if [[ "$PKG" == "apt-get" ]]; then
-        cmd "export DEBIAN_FRONTEND=noninteractive"
-        cmd "apt-get update"
-        cmd "apt-get upgrade -y"
-        cmd "apt-get install -y ansible"
-    elif [[ "$PKG" == "dnf" ]]; then
-        cmd "sudo dnf install -y ansible"
-    elif [[ "$PKG" == "pacman" ]]; then
-        cmd "sudo pacman -Sy --noconfirm ansible"
-    else
-        echo -e "${XMARK} ${RED}No supported package manager found for Ansible install${NC}"
-        exit 1
-    fi
-    task_done
-elif [[ "$OS" == "wsl" ]]; then
-    task "Detectado Windows Subsystem for Linux (WSL)"
-    # Instalar openssh-client si no está instalado
-    if ! command -v ssh >/dev/null 2>&1; then
-        cmd "apt-get update"
-        cmd "apt-get install -y openssh-client"
-    fi
-    # Generar clave SSH si no existe
-    if [[ ! -f "$HOME/.ssh/id_ed25519" ]]; then
-        task "Generando clave SSH para GitHub"
-        ssh-keygen -t ed25519 -C "$(whoami)@$(hostname)" -f "$HOME/.ssh/id_ed25519" -N ""
-        task_done
-    fi
-    # Mostrar la clave pública para agregar a GitHub
-    task "Agrega esta clave pública a GitHub (https://github.com/settings/ssh/new):"
-    cat "$HOME/.ssh/id_ed25519.pub"
-    echo
-    task_done
-    task_done
-elif [[ "$OS" == "windows" ]]; then
-    task "Detectado Windows nativo"
-    # Verificar si PowerShell está disponible
-    if command -v powershell.exe >/dev/null 2>&1; then
-        task "Configurando perfil de PowerShell en .config"
-        configure_powershell
-        task_done
-    else
-        echo -e "${ARROW} ${CYAN}PowerShell no encontrado. Saltando configuración de PowerShell.${NC}"
-    fi
-    task_done
-else
-    echo -e "${XMARK} ${RED}Sistema operativo no soportado${NC}"
-    exit 1
-fi
-
 # Gestión del repositorio
 if ! [[ -d "${DOTFILESDIR}" ]]; then
-    task "Cloning repository"
-    # Usar SSH en vez de HTTPS si estamos en WSL
-    if [[ "$OS" == "wsl" ]]; then
-        cmd "git clone --quiet --bare git@github.com:ivanlynch/.dotfiles.git ${DOTFILESDIR}"
-    else
-        cmd "git clone --quiet --bare https://github.com/ivanlynch/.dotfiles.git ${DOTFILESDIR}"
-    fi
-    task_done
-else
-    # Always fetch first
-    cmd "git -C ${DOTFILESDIR} fetch --quiet"
-    
-    # Para repositorios bare, usamos una verificación diferente
-    if git -C "${DOTFILESDIR}" ls-remote --exit-code --heads origin main >/dev/null 2>&1; then
-        # Repositorio bare necesita manejo especial
-        remote_commit=$(git -C "${DOTFILESDIR}" ls-remote origin main | awk '{print $1}')
-        current_commit=$(git -C "${DOTFILESDIR}" show-ref -s --heads main 2>/dev/null || echo "")
-        
-        if [[ -n "${current_commit}" && "${current_commit}" != "${remote_commit}" ]]; then
-            task "Updating repository"
-            cmd "git -C ${DOTFILESDIR} fetch --quiet origin main:main"
-            task_done
-        else
-            echo -e "${ARROW} ${CYAN}Tu configuración está actualizada${NC}"
-            exit 0
-        fi
-    else
-        echo -e "${XMARK} ${RED}No se encontró la rama remota origin/main. ¿Existe en el repositorio remoto?${NC}"
+    log "info" "Clonando repositorio..."
+    if ! git clone --quiet --bare git@github.com:ivanlynch/.dotfiles.git "${DOTFILESDIR}"; then
+        log "error" "Error al clonar el repositorio"
         exit 1
     fi
+    log "success" "Repositorio clonado"
+else
+    log "info" "Actualizando repositorio..."
+    if ! cd "${DOTFILESDIR}"; then
+        log "error" "Error al acceder al directorio ${DOTFILESDIR}"
+        exit 1
+    fi
+    
+    # Guardar cambios locales si existen
+    if ! git diff --quiet || ! git diff --cached --quiet; then
+        if ! git stash push -m "dotfiles: cambios locales guardados automáticamente" > /dev/null; then
+            log "error" "Error al guardar cambios locales"
+            exit 1
+        fi
+    fi
+
+    # Actualizar repositorio
+    if ! git remote update origin > /dev/null; then
+        log "error" "Error al actualizar el repositorio remoto"
+        exit 1
+    fi
+
+    if ! git update-ref refs/heads/main origin/main > /dev/null; then
+        log "error" "Error al actualizar la referencia local"
+        exit 1
+    fi
+
+    # Restaurar cambios locales si existían
+    if git stash list | grep -q "dotfiles: cambios locales guardados automáticamente"; then
+        if ! git stash pop > /dev/null; then
+            log "error" "Error al restaurar cambios locales"
+            exit 1
+        fi
+    fi
+
+    if ! cd - > /dev/null; then
+        log "error" "Error al volver al directorio anterior"
+        exit 1
+    fi
+    log "success" "Repositorio actualizado"
 fi
 
 # Backup y checkout
-task "Realizando backup de la configuración existente"
-mkdir -p "${BACKUP_DIR}"
+log "info" "Realizando backup de la configuración existente..."
+if ! mkdir -p "${BACKUP_DIR}"; then
+    log "error" "Error al crear directorio de backup"
+    exit 1
+fi
 
-# Identificar y respaldar archivos que serán sobrescritos
-# Primero guardamos la lista en un archivo temporal
-temp_file=$(mktemp)
-config checkout 2>&1 > "${temp_file}"
-cat "${temp_file}" | grep -E "^\s+\." | awk '{print $1}' | while IFS= read -r file; do
-    if backup_file "${file}"; then
-        echo "  Respaldando ${file} a .dotfiles-backup/"
+# Backup de archivos existentes
+log "info" "Verificando archivos a respaldar..."
+if ! config checkout > /dev/null 2>&1; then
+    # Obtener lista de archivos modificados
+    files_to_backup=$(config checkout 2>&1 | grep -E "^\s+\." | awk '{print $1}')
+    
+    if [[ -n "$files_to_backup" ]]; then
+        while IFS= read -r file; do
+            if backup_file "${file}"; then
+                log "info" "Respaldando ${file}"
+            fi
+        done <<< "$files_to_backup"
+    else
+        log "info" "No hay archivos para respaldar"
+    fi
+fi
+
+# Aplicar nueva configuración
+log "info" "Aplicando nueva configuración..."
+if ! config checkout -f; then
+    log "error" "Error al aplicar la configuración"
+    exit 1
+fi
+
+if ! config config status.showUntrackedFiles no; then
+    log "error" "Error al configurar git"
+    exit 1
+fi
+
+# Verificar directorios esenciales
+log "info" "Verificando directorios esenciales..."
+for dir in "$HOME/.config" "$HOME/workspaces/clean" "$HOME/ansible/roles/neovim" "$HOME/ansible/roles/zsh"; do
+    if ! mkdir -p "$dir"; then
+        log "error" "Error al crear directorio $dir"
+        exit 1
     fi
 done
-rm -f "${temp_file}"
-task_done
 
-# Checkout de dotfiles (sobrescribir configuración)
-task "Aplicando nueva configuración"
-config checkout -f
-config config status.showUntrackedFiles no
-task_done
-
-# Asegurar que las carpetas críticas existan y se copien correctamente
-task "Verificando directorios esenciales"
-
-# Directorio ansible
-if [[ ! -d "$HOME/ansible" ]]; then
-    echo "  Creando directorio ansible"
-    mkdir -p "$HOME/ansible/roles/neovim"
-    mkdir -p "$HOME/ansible/roles/zsh"
-    echo "---" > "$HOME/ansible/roles/neovim/main.yml"
-    echo "---" > "$HOME/ansible/roles/neovim/ubuntu.yml"
-    echo "---" > "$HOME/ansible/roles/zsh/main.yml"
-    echo "---" > "$HOME/ansible/roles/zsh/ubuntu.yml"
-fi
-
-# Directorio workspaces/clean
-if [[ ! -d "$HOME/workspaces/clean" ]]; then
-    echo "  Creando directorio workspaces/clean"
-    mkdir -p "$HOME/workspaces/clean"
-    # Copiar archivos esenciales si existen en el repo
-    if [[ -d "$HOME/.dotfiles/workspaces/clean" ]]; then
-        cp -r "$HOME/.dotfiles/workspaces/clean/"* "$HOME/workspaces/clean/"
-    fi
-fi
-
-# Directorio .config (solo verificar)
-if [[ ! -d "$HOME/.config" ]]; then
-    echo "  Creando directorio .config"
-    mkdir -p "$HOME/.config"
-fi
-task_done
-
-echo -e "${ARROW} ${CYAN}Instalación completa! Tu configuración anterior ha sido respaldada en ${BACKUP_DIR}${NC}"
+log "success" "Instalación completa! Tu configuración anterior ha sido respaldada en ${BACKUP_DIR}"
