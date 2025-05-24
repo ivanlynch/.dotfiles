@@ -1,20 +1,15 @@
-FROM ubuntu:latest
+FROM archlinux:latest
 
-ENV DEBIAN_FRONTEND=noninteractive
 ENV USER_NAME=ivanlynch
 
-RUN useradd -m $USER_NAME && \
-    echo "$USER_NAME:$USER_NAME" | chpasswd && \
-    adduser $USER_NAME sudo
+# Actualizar el sistema e instalar paquetes necesarios
+RUN pacman -Syu --noconfirm && \
+    pacman -S --noconfirm base-devel git curl zsh sudo ansible cmake gettext
 
-RUN apt update && \
-    apt install -y software-properties-common && \
-    apt-add-repository -y ppa:ansible/ansible && \
-    apt update && \
-    apt upgrade -y && \
-    apt install -y curl git build-essential cmake gettext zsh sudo ansible && \
-    apt clean autoclean && \
-    apt autoremove --yes
+# Crear usuario y configurar permisos sudo
+RUN useradd -m -G wheel -s /bin/zsh $USER_NAME && \
+    echo "$USER_NAME:$USER_NAME" | chpasswd && \
+    sed -i '/%wheel ALL=(ALL:ALL) ALL/s/^#//' /etc/sudoers
 
 
 WORKDIR /home/$USER_NAME
