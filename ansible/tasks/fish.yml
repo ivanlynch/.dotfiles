@@ -31,6 +31,19 @@
     - conf.d
     - functions
 
+- name: Instalar dependencias
+  apt:
+    name: 
+      - curl
+      - git
+      - wget
+    state: present
+
+- name: Cambiar shell por defecto a Fish
+  shell: chsh -s /usr/bin/fish
+  args:
+    executable: /bin/bash
+
 - name: Mostrar directorio de configuración
   debug:
     msg: "Directorio de configuración de Fish: {{ playbook_dir }}"
@@ -43,20 +56,3 @@
     owner: "{{ ansible_env.USER }}"
     group: "{{ ansible_env.USER }}"
   register: copy_result
-
-- name: Mostrar resultado de la copia
-  debug:
-    var: copy_result
-
-- name: Instalar dependencias
-  apt:
-    name: 
-      - curl
-      - git
-      - wget
-    state: present
-
-- name: Cambiar shell por defecto a Fish
-  shell: chsh -s /usr/bin/fish
-  args:
-    executable: /bin/bash 
