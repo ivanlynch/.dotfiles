@@ -118,7 +118,7 @@ fi
 
 # Verificar directorios esenciales
 log "info" "Verificando directorios esenciales..."
-for dir in "$HOME/.config" "$HOME/workspaces/clean" "$HOME/ansible/roles/neovim" "$HOME/ansible/roles/zsh"; do
+for dir in "$HOME/.config" "$HOME/workspaces/ubuntu" "$HOME/ansible/roles/neovim" "$HOME/ansible/roles/zsh"; do
     if ! mkdir -p "$dir"; then
         log "error" "Error al crear directorio $dir"
         exit 1

@@ -88,7 +88,7 @@ if status is-interactive
     alias itermconf="open $HOME/.config/iterm2"
     alias ws="cd ~/workspaces"
     alias an="cd ~/ansible"
-    alias clean-env="chmod +x ~/workspaces/clean/init.sh; ~/workspaces/clean/init.sh"
+    alias ubuntu="chmod +x ~/workspaces/ubuntu/init.sh; ~/workspaces/ubuntu/init.sh"
     alias surf="/Applications/Windsurf.app/Contents/MacOS/Electron"
 
     # Alias condicional para 'dev' según SO
