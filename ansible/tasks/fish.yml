@@ -96,6 +96,10 @@
   ansible.builtin.import_tasks: fzf.yml # Usando el nombre corregido del archivo
   when: ansible_distribution == "Ubuntu"
 
+- name: Incluir tareas de The Silver Searcher
+  ansible.builtin.import_tasks: thesilversearcher.yml # Usando el nombre corregido del archivo
+  when: ansible_distribution == "Ubuntu"
+
 # La copia de config.fish va DESPUÉS de instalar las herramientas que podría referenciar
 - name: Fish | Copiar configuración de Fish personalizada (config.fish) (Ubuntu)
   ansible.builtin.copy:

@@ -1,0 +1,33 @@
+---
+- name: The Silver Searcher | Instalar silversearcher-ag en Ubuntu
+  ansible.builtin.apt:
+    name: silversearcher-ag # Nombre del paquete según la documentación
+    state: present
+    update_cache: yes # Actualizar caché antes de intentar instalar
+  when: ansible_distribution == "Ubuntu"
+  become: true # Necesario para apt
+  register: silversearcher_install_result
+
+- name: The Silver Searcher | Mostrar estado de la instalación (debug)
+  ansible.builtin.debug:
+    var: silversearcher_install_result
+  when:
+    - ansible_distribution == "Ubuntu"
+    - silversearcher_install_result is defined
+    - silversearcher_install_result.changed # Solo mostrar si realmente se instaló o cambió
+
+- name: The Silver Searcher | Verificar la instalación de ag
+  ansible.builtin.command: ag --version
+  when:
+    - ansible_distribution == "Ubuntu"
+    - silversearcher_install_result.changed # Solo verificar si la instalación reportó cambios
+  changed_when: false # Este comando de verificación no debe marcar la tarea como 'changed'
+  register: ag_version_check
+
+- name: The Silver Searcher | Mostrar versión de ag (debug)
+  ansible.builtin.debug:
+    var: ag_version_check.stdout
+  when:
+    - ansible_distribution == "Ubuntu"
+    - ag_version_check is defined
+    - ag_version_check.stdout is defined
