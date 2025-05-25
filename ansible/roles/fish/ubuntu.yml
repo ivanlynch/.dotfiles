@@ -99,22 +99,3 @@
 - name: Incluir tareas de The Silver Searcher
   ansible.builtin.import_tasks: ../thesilversearcher/main.yml # Usando el nombre corregido del archivo
   when: ansible_distribution == "Ubuntu"
-
-# La copia de config.fish va DESPUÉS de instalar las herramientas que podría referenciar
-- name: Fish | Copiar configuración de Fish personalizada (config.fish) (Ubuntu)
-  ansible.builtin.copy:
-    src: "{{ custom_fish_config_src }}" # Definida en bootstrap.yml, ej: "{{ playbook_dir }}/ansible/files/config.fish"
-    dest: "{{ target_fish_user_home }}/.config/fish/config.fish"
-    mode: '0644'
-    owner: "{{ target_fish_user }}"
-    group: "{{ target_fish_user }}"
-  when: ansible_distribution == "Ubuntu"
-  become: true
-  register: fish_config_copy_result
-
-- name: Fish | Mostrar resultado de la copia de config.fish (debug)
-  ansible.builtin.debug:
-    var: fish_config_copy_result
-  when:
-    - ansible_distribution == "Ubuntu"
-    - fish_config_copy_result is defined

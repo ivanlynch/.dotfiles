@@ -5,7 +5,7 @@
   vars:
     target_fish_user: "ivanlynch"
     target_fish_user_home: "{{ (target_fish_user == 'root') | ternary('/root', '/home/' + target_fish_user) }}"
-    custom_fish_config_src: "{{ playbook_dir }}/ansible/files/config.fish"
+    custom_fish_config_src: "{{ playbook_dir }}/.config/fish/config.fish"
 
   pre_tasks:
     - name: Update Aptitude
