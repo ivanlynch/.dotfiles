@@ -1,0 +1,7 @@
+---
+- name: Configurar Fish Shell
+  hosts: localhost
+  connection: local
+  tasks:
+    - name: Incluir tareas de Fish
+      ansible.builtin.import_tasks: tasks/fish.yml
