@@ -9,6 +9,11 @@ if [[ -d ansible ]]; then
    rm -r ./ansible 
 fi
 
+if [[ -d .config ]]; then
+   echo "Eliminando directorio .config existente"
+   rm -r ./.config
+fi
+
 # Verificar si existe el directorio ansible en home y copiarlo
 if [[ -d ~/ansible ]]; then
    echo "Copiando directorio ansible desde $HOME/ansible..."
@@ -17,6 +22,16 @@ if [[ -d ~/ansible ]]; then
 elif [[ -d ~/.dotfiles/ansible ]]; then
    echo "Copiando directorio ansible desde el repositorio dotfiles..."
    cp -r ~/.dotfiles/ansible ansible
+fi
+
+# Verificar si existe el directorio ansible en home y copiarlo
+if [[ -d ~/.config ]]; then
+   echo "Copiando directorio .config desde $HOME/.config..."
+   cp -r ~/.config .config
+# Si no existe en home, verificar si existe en el repositorio dotfiles
+elif [[ -d ~/.dotfiles/.config ]]; then
+   echo "Copiando directorio .config desde el repositorio dotfiles..."
+   cp -r ~/.dotfiles/.config .config
 fi
 
 # Verificar si existe el Dockerfile
