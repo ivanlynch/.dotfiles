@@ -31,9 +31,11 @@
     - conf.d
     - functions
 
-- name: Copiar configuración de Fish
+- name: Mostrar directorio de configuración
   debug:
     msg: "Directorio de configuración de Fish: {{ playbook_dir }}"
+
+- name: Copiar configuración de Fish
   copy:
     src: "{{ playbook_dir }}/files/config.fish"
     dest: "{{ ansible_env.HOME }}/.config/fish/config.fish"
