@@ -1,12 +1,12 @@
 ---
 # ansible/tasks/fish_ubuntu.yml
-# Asume que las variables target_fish_user, target_fish_user_home, y custom_fish_config_src
+# Asume que las variables user_name, user_home, y custom_fish_config_src
 # están definidas en el playbook que importa este archivo.
 # Asume 'become: true' global o en cada tarea que lo necesite.
 
 - name: Fish | Añadir repositorio de Fish PPA (Ubuntu)
   ansible.builtin.apt_repository:
-    repo: ppa:fish-shell/release-3
+    repo: ppa:fish-shell/release-4
     state: present
     update_cache: yes
   when: ansible_distribution == "Ubuntu"
@@ -28,19 +28,19 @@
   when: ansible_distribution == "Ubuntu"
   become: true
 
-- name: Fish | Cambiar shell por defecto a Fish para el usuario {{ target_fish_user }} (Ubuntu)
+- name: Fish | Cambiar shell por defecto a Fish para el usuario {{ user_name }} (Ubuntu)
   ansible.builtin.user:
-    name: "{{ target_fish_user }}"
+    name: "{{ user_name }}"
     shell: /usr/bin/fish
   when: ansible_distribution == "Ubuntu"
   become: true
 
 - name: Fish | Crear directorios de configuración de Fish para el usuario (Ubuntu)
   ansible.builtin.file:
-    path: "{{ target_fish_user_home }}/.config/fish/{{ item }}"
+    path: "{{ user_home }}/.config/fish/{{ item }}"
     state: directory
-    owner: "{{ target_fish_user }}"
-    group: "{{ target_fish_user }}"
+    owner: "{{ user_name }}"
+    group: "{{ user_name }}"
     mode: "0755"
   loop:
     - "" # Para .config/fish
@@ -52,14 +52,14 @@
 
 - name: Fish | Añadir ~/.local/bin al PATH de fish (vía conf.d) (Ubuntu)
   ansible.builtin.copy:
-    dest: "{{ target_fish_user_home }}/.config/fish/conf.d/00_local_bin_path.fish"
+    dest: "{{ user_home }}/.config/fish/conf.d/00_local_bin_path.fish"
     content: |
       # Añadir ~/.local/bin al PATH de fish
       if status is-interactive; or status is-login
         fish_add_path -mP $HOME/.local/bin
       end
-    owner: "{{ target_fish_user }}"
-    group: "{{ target_fish_user }}"
+    owner: "{{ user_name }}"
+    group: "{{ user_name }}"
     mode: "0644"
   when: ansible_distribution == "Ubuntu"
   become: true
@@ -73,25 +73,6 @@
     state: present
   when: ansible_distribution == "Ubuntu"
   become: true
-
-# --- AÑADIR LA COPIA DE config.fish AQUÍ ---
-# Copiar el config.fish base ANTES de que otras tareas (starship, fzf) intenten modificarlo.
-- name: Fish | Copiar configuración de Fish personalizada (config.fish) (Ubuntu)
-  ansible.builtin.copy:
-    src: "{{ custom_fish_config_src }}" # Definida en Dockerfile, ej: /app/ansible/files/config.fish
-    dest: "{{ target_fish_user_home }}/.config/fish/config.fish"
-    mode: "0644"
-    owner: "{{ target_fish_user }}"
-    group: "{{ target_fish_user }}"
-    remote_src: yes # ¡MUY IMPORTANTE si src es una ruta dentro de la imagen!
-  when: ansible_distribution == "Ubuntu"
-  become: true
-  register: fish_config_copy_status # Registrar para depuración
-
-- name: Fish | Mostrar estado de la copia de config.fish (debug)
-  ansible.builtin.debug:
-    var: fish_config_copy_status
-  when: fish_config_copy_status is defined # Mostrar solo si la tarea se ejecutó y registró algo
 
 # Ahora importar las tareas para otras herramientas que podrían modificar config.fish
 # o que dependen de la configuración base de fish.

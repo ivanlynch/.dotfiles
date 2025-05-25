@@ -26,7 +26,7 @@
 
 - name: Bat | Comprobar si existe ~/.local/bin/bat
   ansible.builtin.stat:
-    path: "{{ target_fish_user_home }}/.local/bin/bat"
+    path: "{{ user_home }}/.local/bin/bat"
   when: ansible_distribution == "Ubuntu"
   become: false
   register: local_bin_bat_stat
@@ -54,10 +54,10 @@
 
 - name: Bat | Crear directorio ~/.local/bin para el usuario si no existe (y es necesario para el enlace)
   ansible.builtin.file:
-    path: "{{ target_fish_user_home }}/.local/bin"
+    path: "{{ user_home }}/.local/bin"
     state: directory
-    owner: "{{ target_fish_user }}"
-    group: "{{ target_fish_user }}"
+    owner: "{{ user_name }}"
+    group: "{{ user_name }}"
     mode: '0755'
   when:
     - ansible_distribution == "Ubuntu"
@@ -67,9 +67,9 @@
 - name: Bat | Crear enlace simbólico bat -> batcat en ~/.local/bin (si es necesario)
   ansible.builtin.file:
     src: /usr/bin/batcat
-    dest: "{{ target_fish_user_home }}/.local/bin/bat"
-    owner: "{{ target_fish_user }}" # Propietario correcto
-    group: "{{ target_fish_user }}" # Grupo correcto
+    dest: "{{ user_home }}/.local/bin/bat"
+    owner: "{{ user_name }}" # Propietario correcto
+    group: "{{ user_name }}" # Grupo correcto
     state: link
     force: yes
   when:

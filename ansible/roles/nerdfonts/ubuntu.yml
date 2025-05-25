@@ -14,7 +14,7 @@
 - name: Nerd Fonts | Definir rutas y URLs de descarga
   ansible.builtin.set_fact:
     # Estos también se definen como hechos.
-    fact_user_fonts_dir: "{{ target_fish_user_home }}/.local/share/fonts" # Directorio de fuentes del usuario
+    fact_user_fonts_dir: "{{ user_home }}/.local/share/fonts" # Directorio de fuentes del usuario
     # Usamos los hechos creados en la tarea anterior
     fact_font_download_url: "https://github.com/ryanoasis/nerd-fonts/releases/download/{{ fact_font_version }}/{{ fact_font_name }}.zip"
     fact_font_temp_download_path: "/tmp/{{ fact_font_name }}.zip"
@@ -35,8 +35,8 @@
   ansible.builtin.file:
     path: "{{ fact_user_fonts_dir }}" # Usamos el hecho definido arriba
     state: directory
-    owner: "{{ target_fish_user }}"
-    group: "{{ target_fish_user }}"
+    owner: "{{ user_name }}"
+    group: "{{ user_name }}"
     mode: "0755"
   when: ansible_distribution == "Ubuntu"
   # 'become: true' heredado
@@ -54,8 +54,8 @@
   ansible.builtin.unarchive:
     src: "{{ fact_font_temp_download_path }}" # Usamos el hecho definido arriba
     dest: "{{ fact_user_fonts_dir }}" # Usamos el hecho definido arriba
-    owner: "{{ target_fish_user }}"
-    group: "{{ target_fish_user }}"
+    owner: "{{ user_name }}"
+    group: "{{ user_name }}"
     remote_src: yes
     # Ejemplo de un archivo que existiría después de la extracción para ayudar con la idempotencia
     # El nombre exacto puede variar ligeramente según la fuente y si tiene espacios

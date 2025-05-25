@@ -3,8 +3,8 @@
   hosts: localhost
   become: yes
   vars:
-    target_fish_user: "ivanlynch"
-    target_fish_user_home: "{{ (target_fish_user == 'root') | ternary('/root', '/home/' + target_fish_user) }}"
+    user_name: "ivanlynch"
+    user_home: "{{ (user_name == 'root') | ternary('/root', '/home/' + user_name) }}"
     custom_fish_config_src: "{{ playbook_dir }}/.config/fish/config.fish"
 
   pre_tasks:

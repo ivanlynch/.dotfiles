@@ -1,45 +1,45 @@
 ---
-- name: Remove Neovim folder
+- name: Neovim | Remove folder if exists
   shell: rm -rf ~/neovim
   tags:
     - install
     - neovim
-- name: Install Dependencies
+- name: Neovim | Install Dependencies
   block:
   - name: Install ninja-build
     ansible.builtin.apt:
       name: ninja-build
       state: present
-  - name: Install gettext
+  - name: Neovim | Install gettext
     ansible.builtin.apt:
       name: gettext
       state: present
-  - name: Install cmake
+  - name: Neovim | Install cmake
     ansible.builtin.apt:
       name: cmake
       state: present
-  - name: Install unzip
+  - name: Neovim | Install unzip
     ansible.builtin.apt:
       name: unzip
       state: present
-  - name: Install curl
+  - name: Neovim | Install curl
     ansible.builtin.apt:
       name: curl
       state: present
-- name: Clone Neovim Repository
+- name: Neovim | Clone Repository
   git:
     repo: "https://github.com/neovim/neovim.git"
-    dest: "{{ lookup('env', 'HOME') }}/neovim"
+    dest: "{{ user_home }}/neovim"
   tags:
     - install
     - neovim
-- name: Build Neovim from source
-  shell: "cd {{ lookup('env', 'HOME') }}/neovim && make CMAKE_BUILD_TYPE=RelWithDebInfo"
+- name: Neovim | Build from source
+  shell: "cd {{ user_home }}/neovim && make CMAKE_BUILD_TYPE=RelWithDebInfo"
   tags:
     - install
     - neovim
-- name: Install Neovim
-  shell: "cd {{ lookup('env', 'HOME') }}/neovim && make install"
+- name: Neovim | Install
+  shell: "cd {{ user_home }}/neovim && make install"
   tags:
     - install
     - neovim

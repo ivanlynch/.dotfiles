@@ -15,13 +15,13 @@
     # El script de instalación de zoxide generalmente instala en ~/.local/bin/zoxide
     # y las manpages en ~/.local/share/man/man1/zoxide.1.
     # Esta comprobación 'creates' ayuda con la idempotencia.
-    creates: "{{ target_fish_user_home }}/.local/bin/zoxide"
+    creates: "{{ user_home }}/.local/bin/zoxide"
   environment:
     # El script de instalación puede usar HOME para determinar dónde instalar.
     # Si 'become: true' es global y no hay 'become_user', HOME podría ser /root.
     # Forzar HOME al del usuario objetivo si la tarea se ejecuta con 'become: true' sin 'become_user'.
-    HOME: "{{ target_fish_user_home }}"
-    # PATH: "{{ ansible_env.PATH }}:{{ target_fish_user_home }}/.local/bin" # Opcional, para que sh encuentre comandos
+    HOME: "{{ user_home }}"
+    # PATH: "{{ ansible_env.PATH }}:{{ user_home }}/.local/bin" # Opcional, para que sh encuentre comandos
   when: ansible_distribution == "Ubuntu"
   # Si 'become: true' es global en el playbook:
   # El script de zoxide está diseñado para instalarse en el directorio del usuario ($HOME/.local/bin)
@@ -29,10 +29,10 @@
   # Sin embargo, si la tarea se ejecuta como root debido a un 'become: true' global
   # sin 'become_user', es CRUCIAL que la variable HOME esté correctamente seteada
   # para que la instalación ocurra en el home del usuario correcto y no en /root/.local/bin.
-  # Si la tarea usa 'become: true' y 'become_user: "{{ target_fish_user }}"', entonces HOME se resolvería correctamente.
+  # Si la tarea usa 'become: true' y 'become_user: "{{ user_name }}"', entonces HOME se resolvería correctamente.
   # Por simplicidad y asumiendo un 'become: true' global, establecer HOME aquí es una buena salvaguarda.
   become: true # Necesario si el 'sh' necesita escribir en directorios protegidos o si HOME no se establece correctamente
-  become_user: "{{ target_fish_user }}" # ¡MUY RECOMENDADO para que se instale en el home del usuario correcto!
+  become_user: "{{ user_name }}" # ¡MUY RECOMENDADO para que se instale en el home del usuario correcto!
   register: zoxide_install_script_result
   changed_when: "'Installed zoxide to' in zoxide_install_script_result.stdout" # El script indica si instaló
 

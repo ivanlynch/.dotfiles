@@ -3,82 +3,27 @@
   ansible.builtin.apt:
     name: git
     state: present
-    update_cache: yes # Solo si es la primera tarea apt en mucho tiempo
+    update_cache: yes
   when: ansible_distribution == "Ubuntu"
   become: true
 
 - name: FZF | Clonar el repositorio de fzf
   ansible.builtin.git:
     repo: "https://github.com/junegunn/fzf.git"
-    dest: "{{ target_fish_user_home }}/.fzf" # Directorio de instalación para fzf
-    depth: 1 # Clonación superficial, solo la última revisión
-    # version: main # O una etiqueta de release específica si lo prefieres
-  # Esta tarea debería ejecutarse como el usuario para clonar en su home
+    dest: "{{ user_home }}/.fzf"
+    depth: 1
   become: true
-  become_user: "{{ target_fish_user }}"
+  become_user: "{{ user_name }}"
   when: ansible_distribution == "Ubuntu"
   register: fzf_clone_result
 
 - name: FZF | Ejecutar el script de instalación de fzf
   ansible.builtin.command:
-    cmd: "{{ target_fish_user_home }}/.fzf/install --all" # El '--all' intenta instalar para todos los shells detectados
-                                                         # y también descarga el binario si es necesario.
-                                                         # También puedes usar --bin para solo instalar el binario
-                                                         # y luego manejar la integración con el shell manualmente.
-                                                         # Opciones alternativas: --key-bindings --completion --no-update-rc
-    creates: "{{ target_fish_user_home }}/.fzf/bin/fzf" # El script de instalación crea este binario
-  # Esta tarea DEBE ejecutarse como el usuario, ya que modifica sus archivos de configuración de shell
+    cmd: "{{ user_home }}/.fzf/install --all"
+    creates: "{{ user_home }}/.fzf/bin/fzf"
   become: true
-  become_user: "{{ target_fish_user }}"
+  become_user: "{{ user_name }}"
   when:
     - ansible_distribution == "Ubuntu"
-    # - fzf_clone_result.changed # Solo ejecutar si el clonado cambió, o
-    #                            # si no estás seguro de si el script 'install' es idempotente.
-    #                            # El script install es bastante bueno detectando si ya está hecho.
   register: fzf_install_script_result
   changed_when: "'source' in fzf_install_script_result.stdout or 'Already exists' not in fzf_install_script_result.stdout" # El script de instalación es un poco verboso
-
-- name: FZF | Mostrar resultado del script de instalación (debug)
-  ansible.builtin.debug:
-    var: fzf_install_script_result
-  when:
-    - ansible_distribution == "Ubuntu"
-    - fzf_install_script_result is defined
-    # - fzf_install_script_result.changed # Solo mostrar si algo cambió
-
-# La integración con Fish se hace añadiendo una línea a config.fish
-# El script ~/.fzf/install con --all debería intentar hacer esto,
-# pero podemos asegurarlo o hacerlo explícitamente.
-
-- name: FZF | Asegurar que la inicialización de fzf esté en config.fish
-  ansible.builtin.blockinfile:
-    path: "{{ custom_fish_config_src }}"
-    block: |
-      # Configuración de fzf para fish (key bindings y fuzzy completion)
-      # Asegúrate de que $HOME/.fzf/bin esté en tu PATH si no lo añade el script de instalación
-      # (El script 'install' normalmente lo añade a .config/fish/conf.d/fzf.fish o similar)
-      if test -f "$HOME/.fzf/bin/fzf" -a -x "$HOME/.fzf/bin/fzf"
-        # Si fzf fue instalado vía git clone en ~/.fzf y el binario existe
-        # Intentar usar la integración que el propio fzf provee.
-        # El script ~/.fzf/install puede ya haber añadido esto a un archivo en conf.d/
-        # Esta línea es por si usas una versión de fzf >= 0.48.0
-        if type -q fzf && "$HOME/.fzf/bin/fzf" --fish --no-completion > /dev/null 2>&1 # Chequea si fzf --fish existe y no da error
-          status is-interactive; and "$HOME/.fzf/bin/fzf" --fish | source
-        else
-          # Fallback para versiones más antiguas o si lo anterior falla:
-          # Buscar los scripts individuales si están disponibles
-          if test -f "$HOME/.fzf/shell/key-bindings.fish"
-            status is-interactive; and source "$HOME/.fzf/shell/key-bindings.fish"
-          end
-          # La compleción para fish es más compleja y a menudo se gestiona con plugins
-          # como 'PatrickF1/fzf.fish' vía Fisher.
-          # El script de instalación de fzf puede crear un archivo en conf.d para la compleción.
-        end
-      end
-    marker: "# {mark} ANSIBLE MANAGED BLOCK FZF INTEGRATION"
-    insertafter: EOF # Añadir al final del archivo
-    owner: "{{ target_fish_user }}"
-    group: "{{ target_fish_user }}"
-    mode: '0644'
-  when: ansible_distribution == "Ubuntu"
-  become: true # Para escribir el archivo, pero el owner/group lo establece para el usuario

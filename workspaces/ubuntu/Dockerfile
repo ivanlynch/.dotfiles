@@ -47,19 +47,14 @@ COPY . .
 
 # Ejecutar Ansible playbook para configurar el entorno como root
 RUN ansible-playbook -i localhost, -c local bootstrap.yml \
-    -e "target_fish_user=${USER_NAME}" \
-    -e "target_fish_user_home=${USER_HOME}" \
-    -e "custom_fish_config_src=/app/.config/fish/config.fish" \
-    -e "neovim_config_src_dir=/app/.config/nvim" \
-    -e "fish_local_config_src_dir=/app/.config/fish"
-
-RUN echo ">>> Contenido de /home/${USER_NAME}/.config/fish/config.fish después de Ansible:" \
-    && cat "${USER_HOME}/.config/fish/config.fish" || echo ">>> Archivo config.fish no encontrado en el home del usuario."
-RUN echo ">>> Contenido de /home/${USER_NAME}/.config/fish/conf.d/00_local_bin_path.fish después de Ansible:" \
-    && cat "${USER_HOME}/.config/fish/conf.d/00_local_bin_path.fish" || echo ">>> Archivo 00_local_bin_path.fish no encontrado."
+    -e "user_name=${USER_NAME}" \
+    -e "user_home=${USER_HOME}"
 
 # Cambiar al usuario no root
 USER $USER_NAME
 WORKDIR ${USER_HOME}
+
+# Copy .config folder after install is complete
+COPY ./.config ${USER_HOME}/.config
 
 CMD ["/usr/bin/fish"]
