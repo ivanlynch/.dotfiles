@@ -25,6 +25,9 @@
       # 'become: true' aquí es heredado del play
 
   tasks:
+    - name: Incluir tareas de instalación de Nerd Fonts para Ubuntu
+      ansible.builtin.import_tasks: ansible/tasks/nerdfonts.yml
+
     - name: "Include Neovim tasks" # Asumo que este es el propósito
       ansible.builtin.import_tasks:
         file:

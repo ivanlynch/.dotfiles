@@ -1,0 +1,78 @@
+---
+# Variables que podrían definirse en el playbook principal o en defaults/main.yml
+# nerd_font_name: "JetBrainsMono" # Nombre de la fuente a instalar de Nerd Fonts
+# nerd_font_version: "v3.2.1" # Versión específica de Nerd Fonts a descargar
+# (Revisa https://github.com/ryanoasis/nerd-fonts/releases para la última)
+
+- name: Nerd Fonts | Definir variables para la instalación de Nerd Fonts
+  ansible.builtin.set_fact:
+    font_name: "{{ nerd_font_name | default('JetBrainsMono') }}"
+    font_version: "{{ nerd_font_version | default('v3.2.1') }}"
+    user_fonts_dir: "{{ target_fish_user_home }}/.local/share/fonts"
+    font_download_url: "https://github.com/ryanoasis/nerd-fonts/releases/download/{{ ansible_facts.font_version }}/{{ ansible_facts.font_name }}.zip"
+    font_temp_download_path: "/tmp/{{ ansible_facts.font_name }}.zip"
+  when: ansible_distribution == "Ubuntu"
+
+- name: Nerd Fonts | Instalar prerequisitos (wget, unzip, fontconfig) en Ubuntu
+  ansible.builtin.apt:
+    name:
+      - wget
+      - unzip
+      - fontconfig # Necesario para fc-cache
+    state: present
+    update_cache: yes
+  when: ansible_distribution == "Ubuntu"
+  # 'become: true' heredado
+
+- name: Nerd Fonts | Crear directorio de fuentes del usuario si no existe
+  ansible.builtin.file:
+    path: "{{ ansible_facts.user_fonts_dir }}"
+    state: directory
+    owner: "{{ target_fish_user }}"
+    group: "{{ target_fish_user }}"
+    mode: "0755"
+  when: ansible_distribution == "Ubuntu"
+  # 'become: true' heredado (para asegurar propietario/grupo correcto aunque el usuario pueda crear su propio dir)
+
+- name: Nerd Fonts | Descargar el archivo ZIP de la Nerd Font seleccionada
+  ansible.builtin.get_url:
+    url: "{{ ansible_facts.font_download_url }}"
+    dest: "{{ ansible_facts.font_temp_download_path }}"
+    mode: "0644"
+  when: ansible_distribution == "Ubuntu"
+  register: nerd_font_downloaded
+  # No necesita 'become' para descargar a /tmp
+
+- name: Nerd Fonts | Descomprimir la Nerd Font en el directorio de fuentes del usuario
+  ansible.builtin.unarchive:
+    src: "{{ ansible_facts.font_temp_download_path }}"
+    dest: "{{ ansible_facts.user_fonts_dir }}"
+    owner: "{{ target_fish_user }}"
+    group: "{{ target_fish_user }}"
+    remote_src: yes # Indica que el archivo ZIP está en el nodo remoto (en /tmp)
+    creates: "{{ ansible_facts.user_fonts_dir }}/{{ ansible_facts.font_name }}NerdFont-Regular.ttf" # Ejemplo de un archivo que existiría después de la extracción
+  when:
+    - ansible_distribution == "Ubuntu"
+    - nerd_font_downloaded.changed # Solo si el archivo ZIP se descargó
+  # 'become: true' y 'become_user: "{{ target_fish_user }}"' sería una forma de descomprimir como el usuario
+  # O, como root y luego chown, pero descomprimir directamente con el owner/group correcto es más limpio si se puede.
+  # Si el 'become: true' global interfiere, puedes poner 'become: false' y que el usuario tenga permisos
+  # para escribir en su propio ~/.local/share/fonts (lo cual debería).
+  # Si el directorio de destino es sistémico como /usr/local/share/fonts, 'become: true' es necesario.
+
+- name: Nerd Fonts | Limpiar archivo ZIP descargado
+  ansible.builtin.file:
+    path: "{{ ansible_facts.font_temp_download_path }}"
+    state: absent
+  when:
+    - ansible_distribution == "Ubuntu"
+    - nerd_font_downloaded.changed # Solo si se descargó
+
+- name: Nerd Fonts | Actualizar la caché de fuentes del sistema
+  ansible.builtin.command: "fc-cache -fv"
+  when: ansible_distribution == "Ubuntu"
+  # 'become: true' si quieres que actualice la caché globalmente, o
+  # 'become: true' y 'become_user: "{{ target_fish_user }}"' si fc-cache se ejecuta como el usuario para su directorio local.
+  # Generalmente, fc-cache -fv como root actualiza para todos los directorios conocidos.
+  changed_when: false # fc-cache siempre reporta cambios en su salida, pero no necesariamente significa que el estado de Ansible cambió.
+  # 'become: true' heredado
