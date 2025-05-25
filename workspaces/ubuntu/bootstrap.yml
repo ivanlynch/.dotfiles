@@ -14,8 +14,8 @@
         update_cache: yes
 
   tasks:
-    - name: Incluir tareas de instalación de Nerd Fonts para Ubuntu
-      ansible.builtin.import_tasks: ansible/tasks/nerdfonts.yml
+    - name: Incluir tareas de Nerd Fonts
+      ansible.builtin.import_tasks: ansible/roles/nerdfonts/main.yml
 
     - name: Incluir tareas de Neovim
       ansible.builtin.import_tasks: ansible/roles/neovim/main.yml
