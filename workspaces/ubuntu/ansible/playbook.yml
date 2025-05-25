@@ -2,10 +2,15 @@
 - name: Install Workspace
   hosts: localhost
   become: true
+  vars:
+    ansible_dir: "{{ lookup('env', 'PWD') }}"
   tasks:
-    - name: Debug playbook_dir
+    - name: Debug variables
       debug:
-        msg: "El valor de playbook_dir es: {{ playbook_dir }}"
+        msg: 
+          - "ansible_dir: {{ ansible_dir }}"
+          - "playbook_dir: {{ playbook_dir }}"
+          - "inventory_dir: {{ inventory_dir }}"
 
     - name: Update Aptitude
       apt:
@@ -13,4 +18,4 @@
         cache_valid_time: 3600
 
     - name: Include Fish tasks
-      include_tasks: tasks/fish.yml
+      include_tasks: "{{ playbook_dir }}/tasks/fish.yml"

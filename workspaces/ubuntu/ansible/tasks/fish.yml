@@ -1,7 +1,10 @@
 ---
-- name: Debug playbook_dir en fish.yml
+- name: Debug variables en fish.yml
   debug:
-    msg: "El valor de playbook_dir en fish.yml es: {{ playbook_dir }}"
+    msg:
+      - "playbook_dir: {{ playbook_dir }}"
+      - "ansible_dir: {{ ansible_dir }}"
+      - "inventory_dir: {{ inventory_dir }}"
 
 - name: Debug ansible_env.HOME
   debug:
@@ -46,6 +49,11 @@
     src: "{{ playbook_dir }}/../files/config.fish"
     dest: "{{ ansible_env.HOME }}/.config/fish/config.fish"
     mode: '0644'
+  register: copy_result
+
+- name: Debug resultado de la copia
+  debug:
+    var: copy_result
 
 - name: Instalar dependencias de Fish
   apt:
