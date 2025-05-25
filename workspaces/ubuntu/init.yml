@@ -2,7 +2,7 @@ version: '3.3'
 services:
   workspace:
     build:
-      context: ../../ansible
-      dockerfile: ../workspaces/ubuntu/Dockerfile
+      context: .
+      dockerfile: Dockerfile
     stdin_open: true
     tty: true
