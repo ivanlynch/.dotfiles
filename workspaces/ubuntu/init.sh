@@ -17,21 +17,6 @@ if [[ -d ~/ansible ]]; then
 elif [[ -d ~/.dotfiles/ansible ]]; then
    echo "Copiando directorio ansible desde el repositorio dotfiles..."
    cp -r ~/.dotfiles/ansible ansible
-   # Copiar el archivo config.fish
-   echo "Copiando archivo config.fish..."
-   mkdir -p ansible/files
-   cp ~/.config/fish/config.fish ansible/files/
-# Si no existe en dotfiles, crear un directorio básico con la estructura necesaria
-else
-   echo "Creando estructura básica de ansible..."
-   mkdir -p ansible/roles/neovim
-   mkdir -p ansible/roles/zsh
-   
-   # Crear archivos mínimos necesarios
-   echo "---" > ansible/roles/neovim/main.yml
-   echo "---" > ansible/roles/neovim/ubuntu.yml
-   echo "---" > ansible/roles/zsh/main.yml
-   echo "---" > ansible/roles/zsh/ubuntu.yml
 fi
 
 # Verificar si existe el Dockerfile

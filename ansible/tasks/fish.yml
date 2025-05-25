@@ -1,58 +1,51 @@
+# ansible/tasks/fish.yml
 ---
-- name: Añadir repositorio de Fish
-  apt_repository:
-    repo: ppa:fish-shell/release-4
+# Las variables target_fish_user, target_fish_user_home y custom_fish_config_src
+# se esperan definidas en el playbook que importa este archivo.
+
+- name: Fish | Añadir repositorio de Fish PPA (Debian/Ubuntu)
+  ansible.builtin.apt_repository:
+    repo: ppa:fish-shell/release-4 # O la versión/PPA que necesites
     state: present
     update_cache: yes
+  # 'become: true' heredado del play en bootstrap.yml
 
-- name: Instalar Fish shell
-  apt:
+- name: Fish | Instalar Fish shell
+  ansible.builtin.apt:
     name: fish
     state: present
-    update_cache: yes
+  # 'become: true' heredado
 
-- name: Crear directorio de configuración de Fish
-  file:
-    path: "{{ ansible_env.HOME }}/.config/fish"
-    state: directory
-    mode: '0755'
-    owner: "{{ ansible_env.USER }}"
-    group: "{{ ansible_env.USER }}"
+- name: Fish | Asegurar que fish está en /etc/shells
+  ansible.builtin.lineinfile:
+    path: /etc/shells
+    line: /usr/bin/fish # Verificar con 'which fish' en el target si es diferente
+    state: present
+    create: yes
+  # 'become: true' heredado
 
-- name: Crear subdirectorios de Fish
-  file:
-    path: "{{ ansible_env.HOME }}/.config/fish/{{ item }}"
-    state: directory
-    mode: '0755'
-    owner: "{{ ansible_env.USER }}"
-    group: "{{ ansible_env.USER }}"
-  loop:
-    - completions
-    - conf.d
-    - functions
+- name: Fish | Copiar configuración de Fish personalizada
+  ansible.builtin.copy:
+    src: "{{ custom_fish_config_src }}" # Variable definida en bootstrap.yml
+    dest: "{{ target_fish_user_home }}/.config/fish/config.fish"
+    mode: "0644"
+    owner: "{{ target_fish_user }}"
+    group: "{{ target_fish_user }}"
+  # 'become: true' heredado
+  register: fish_copy_result
 
-- name: Instalar dependencias
-  apt:
-    name: 
+
+- name: Fish | Instalar dependencias (curl, git, wget)
+  ansible.builtin.apt:
+    name:
       - curl
       - git
       - wget
     state: present
+  # 'become: true' heredado
 
-- name: Cambiar shell por defecto a Fish
-  shell: chsh -s /usr/bin/fish
-  args:
-    executable: /bin/bash
-
-- name: Mostrar directorio de configuración
-  debug:
-    msg: "Directorio de configuración de Fish: {{ playbook_dir }}"
-
-- name: Copiar configuración de Fish
-  copy:
-    src: "{{ playbook_dir }}/ansible/files/config.fish"
-    dest: "{{ ansible_env.HOME }}/.config/fish/config.fish"
-    mode: '0644'
-    owner: "{{ ansible_env.USER }}"
-    group: "{{ ansible_env.USER }}"
-  register: copy_result
+- name: Fish | Cambiar shell por defecto a Fish para el usuario {{ target_fish_user }}
+  ansible.builtin.user:
+    name: "{{ target_fish_user }}"
+    shell: /usr/bin/fish # Verificar con 'which fish'
+  # 'become: true' heredado
