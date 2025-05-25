@@ -1,0 +1,60 @@
+---
+- name: Añadir repositorio de Fish
+  apt_repository:
+    repo: ppa:fish-shell/release-4
+    state: present
+    update_cache: yes
+
+- name: Instalar Fish shell
+  apt:
+    name: fish
+    state: present
+    update_cache: yes
+
+- name: Crear directorio de configuración de Fish
+  file:
+    path: "{{ ansible_env.HOME }}/.config/fish"
+    state: directory
+    mode: '0755'
+    owner: "{{ ansible_env.USER }}"
+    group: "{{ ansible_env.USER }}"
+
+- name: Crear subdirectorios de Fish
+  file:
+    path: "{{ ansible_env.HOME }}/.config/fish/{{ item }}"
+    state: directory
+    mode: '0755'
+    owner: "{{ ansible_env.USER }}"
+    group: "{{ ansible_env.USER }}"
+  with_items:
+    - completions
+    - conf.d
+    - functions
+
+- name: Copiar configuración de Fish
+  copy:
+    src: "/home/ivanlynch/ansible/files/config.fish"
+    dest: "{{ ansible_env.HOME }}/.config/fish/config.fish"
+    mode: '0644'
+    owner: "{{ ansible_env.USER }}"
+    group: "{{ ansible_env.USER }}"
+
+- name: Instalar dependencias de Fish
+  apt:
+    name:
+      - curl
+      - git
+      - wget
+      - unzip
+    state: present
+    update_cache: yes
+
+- name: Instalar Fisher (gestor de plugins de Fish)
+  shell: fish -c 'curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source; fisher install jorgebucaran/fisher'
+  args:
+    creates: "{{ ansible_env.HOME }}/.config/fish/functions/fisher.fish"
+  become: false
+
+- name: Cambiar shell por defecto a Fish
+  shell: chsh -s /usr/bin/fish {{ ansible_env.USER }}
+  become: true 
