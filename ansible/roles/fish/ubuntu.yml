@@ -77,19 +77,19 @@
 
 # Aquí importas las tareas para otras herramientas que fish podría necesitar o referenciar
 - name: Incluir tareas de Starship
-  ansible.builtin.import_tasks: starship.yml # Asegúrate que starship.yml existe y es correcto
+  ansible.builtin.import_tasks: ../starship/main.yml # Asegúrate que starship.yml existe y es correcto
   when: ansible_distribution == "Ubuntu" # O la condición que aplique a starship
 
 - name: Incluir tareas de Eza
-  ansible.builtin.import_tasks: eza.yml # Asegúrate que eza.yml existe y es correcto
+  ansible.builtin.import_tasks: ../eza/main.yml # Asegúrate que eza.yml existe y es correcto
   when: ansible_distribution == "Ubuntu" # O la condición que aplique a eza
 
 - name: Incluir tareas de Bat
-  ansible.builtin.import_tasks: bat.yml # Usando el nombre corregido del archivo
+  ansible.builtin.import_tasks: ../bat/main.yml # Usando el nombre corregido del archivo
   when: ansible_distribution == "Ubuntu"
 
 - name: Incluir tareas de Zoxide
-  ansible.builtin.import_tasks: zoxide.yml # Usando el nombre corregido del archivo
+  ansible.builtin.import_tasks: ../zoxide/main.yml # Usando el nombre corregido del archivo
   when: ansible_distribution == "Ubuntu"
 
 - name: Incluir tareas de Fzf
@@ -97,7 +97,7 @@
   when: ansible_distribution == "Ubuntu"
 
 - name: Incluir tareas de The Silver Searcher
-  ansible.builtin.import_tasks: thesilversearcher.yml # Usando el nombre corregido del archivo
+  ansible.builtin.import_tasks: ../thesilversearcher/main.yml # Usando el nombre corregido del archivo
   when: ansible_distribution == "Ubuntu"
 
 # La copia de config.fish va DESPUÉS de instalar las herramientas que podría referenciar
