@@ -52,7 +52,7 @@
 
 - name: FZF | Asegurar que la inicialización de fzf esté en config.fish
   ansible.builtin.blockinfile:
-    path: "{{ target_fish_user_home }}/.config/fish/config.fish"
+    path: "{{ custom_fish_config_src }}"
     block: |
       # Configuración de fzf para fish (key bindings y fuzzy completion)
       # Asegúrate de que $HOME/.fzf/bin esté en tu PATH si no lo añade el script de instalación
