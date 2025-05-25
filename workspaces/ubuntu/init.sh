@@ -17,6 +17,10 @@ if [[ -d ~/ansible ]]; then
 elif [[ -d ~/.dotfiles/ansible ]]; then
    echo "Copiando directorio ansible desde el repositorio dotfiles..."
    cp -r ~/.dotfiles/ansible ansible
+   # Copiar el archivo config.fish
+   echo "Copiando archivo config.fish..."
+   mkdir -p ansible/files
+   cp ~/.config/fish/config.fish ansible/files/
 # Si no existe en dotfiles, crear un directorio básico con la estructura necesaria
 else
    echo "Creando estructura básica de ansible..."
