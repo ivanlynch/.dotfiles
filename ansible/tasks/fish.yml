@@ -40,6 +40,9 @@
   # Las variables target_fish_user, target_fish_user_home, custom_fish_config_src
   # estarán disponibles para las tareas en fish.yml
 
+- name: Incluir tareas de Eza
+  ansible.builtin.import_tasks: eza.yml
+
 - name: Fish | Copiar configuración de Fish personalizada
   ansible.builtin.copy:
     src: "{{ custom_fish_config_src }}" # Variable definida en bootstrap.yml

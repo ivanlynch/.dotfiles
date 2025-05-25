@@ -1,0 +1,46 @@
+---
+- name: Eza | Instalar prerequisitos para eza (gpg) en Ubuntu
+  ansible.builtin.apt:
+    name: gpg
+    state: present
+    update_cache: yes # Actualizar caché una vez antes de operar con apt
+  when: ansible_distribution == "Ubuntu"
+  # 'become: true' heredado del playbook principal
+
+- name: Eza | Crear directorio para llaveros de APT si no existe en Ubuntu
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: "0755"
+  when: ansible_distribution == "Ubuntu"
+  # 'become: true' heredado
+
+- name: Eza | Añadir clave GPG del repositorio de eza en Ubuntu
+  ansible.builtin.get_url:
+    url: "https://raw.githubusercontent.com/eza-community/eza/main/deb.asc" # URL de la clave GPG de eza
+    dest: "/etc/apt/keyrings/eza-archive-keyring.asc" # Destino recomendado para llaves GPG
+    mode: "0644"
+  when: ansible_distribution == "Ubuntu"
+  # 'become: true' heredado
+
+- name: Eza | Añadir repositorio de eza en Ubuntu
+  ansible.builtin.apt_repository:
+    repo: "deb [signed-by=/etc/apt/keyrings/eza-archive-keyring.asc] https://deb.hzuccon.com/ ./"
+    state: present
+    filename: eza # Crea /etc/apt/sources.list.d/eza.list
+    update_cache: yes # Actualizar caché después de añadir el repo
+  when: ansible_distribution == "Ubuntu"
+  # 'become: true' heredado
+
+- name: Eza | Instalar eza en Ubuntu
+  ansible.builtin.apt:
+    name: eza
+    state: present # Asegura que esté instalado [2]
+  when: ansible_distribution == "Ubuntu"
+  # 'become: true' heredado
+  register: eza_install_status
+
+- name: Eza | Mostrar estado de la instalación (debug)
+  ansible.builtin.debug:
+    var: eza_install_status
+  when: ansible_distribution == "Ubuntu"
