@@ -31,7 +31,7 @@
 
 - name: Copiar configuración de Fish
   copy:
-    src: "{{ playbook_dir }}/files/config.fish"
+    src: "{{ playbook_dir }}/ansible/files/config.fish"
     dest: "{{ ansible_env.HOME }}/.config/fish/config.fish"
     mode: '0644'
 
@@ -44,6 +44,7 @@
       - unzip
     state: present
     update_cache: yes
+  become: true
 
 - name: Instalar Fisher (gestor de plugins de Fish)
   shell: fish -c 'curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source; fisher install jorgebucaran/fisher'
