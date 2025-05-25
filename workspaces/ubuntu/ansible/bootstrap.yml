@@ -28,4 +28,4 @@
         cache_valid_time: 3600
 
     - name: Include Fish tasks
-      include_tasks: "{{ playbook_dir }}/../ansible/tasks/fish.yml" 
+      include_tasks: "{{ playbook_dir }}/../../ansible/tasks/fish.yml" 

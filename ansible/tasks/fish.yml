@@ -26,35 +26,33 @@
     mode: '0755'
     owner: "{{ ansible_env.USER }}"
     group: "{{ ansible_env.USER }}"
-  with_items:
+  loop:
     - completions
     - conf.d
     - functions
 
 - name: Copiar configuración de Fish
   copy:
-    src: files/config.fish
+    src: "{{ playbook_dir }}/../../ansible/files/config.fish"
     dest: "{{ ansible_env.HOME }}/.config/fish/config.fish"
     mode: '0644'
     owner: "{{ ansible_env.USER }}"
     group: "{{ ansible_env.USER }}"
+  register: copy_result
 
-- name: Instalar dependencias de Fish
+- name: Mostrar resultado de la copia
+  debug:
+    var: copy_result
+
+- name: Instalar dependencias
   apt:
-    name:
+    name: 
       - curl
       - git
       - wget
-      - unzip
     state: present
-    update_cache: yes
-
-- name: Instalar Fisher (gestor de plugins de Fish)
-  shell: curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source && fisher install jorgebucaran/fisher
-  args:
-    creates: "{{ ansible_env.HOME }}/.config/fish/functions/fisher.fish"
-  become: false
 
 - name: Cambiar shell por defecto a Fish
-  shell: chsh -s /usr/bin/fish {{ ansible_env.USER }}
-  become: true 
+  shell: chsh -s /usr/bin/fish
+  args:
+    executable: /bin/bash 
