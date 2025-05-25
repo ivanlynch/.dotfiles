@@ -24,6 +24,17 @@
     create: yes
   # 'become: true' heredado
 
+- name: Fish | Crear directorio de configuración de Fish principal si no existe
+  ansible.builtin.file:
+    path: "{{ target_fish_user_home }}/.config/fish" # Ruta completa al directorio de fish
+    state: directory # Asegura que es un directorio
+    owner: "{{ target_fish_user }}" # Establece el propietario
+    group: "{{ target_fish_user }}" # Establece el grupo
+    mode: "0755" # Establece los permisos
+  # 'become: true' heredado (root crea el dir y setea owner/group)
+  # Esta tarea es idempotente: solo crea el directorio si no existe [3].
+  # Si ya existe, Ansible se asegura de que los permisos, propietario y grupo sean los especificados.
+
 - name: Fish | Copiar configuración de Fish personalizada
   ansible.builtin.copy:
     src: "{{ custom_fish_config_src }}" # Variable definida en bootstrap.yml
@@ -33,7 +44,6 @@
     group: "{{ target_fish_user }}"
   # 'become: true' heredado
   register: fish_copy_result
-
 
 - name: Fish | Instalar dependencias (curl, git, wget)
   ansible.builtin.apt:
