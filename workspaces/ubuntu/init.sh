@@ -24,14 +24,24 @@ elif [[ -d ~/.dotfiles/ansible ]]; then
    cp -r ~/.dotfiles/ansible ansible
 fi
 
-# Verificar si existe el directorio ansible en home y copiarlo
-if [[ -d ~/.config ]]; then
-   echo "Copiando directorio .config desde $HOME/.config..."
-   cp -r ~/.config .config
+# Verificar si existe configuracion de Neovim
+if [[ -d ~/.config/nvim ]]; then
+   echo "Copiando directorio .config/nvim desde $HOME/.config/nvim..."
+   cp -r ~/.config/nvim .config/nvim
 # Si no existe en home, verificar si existe en el repositorio dotfiles
-elif [[ -d ~/.dotfiles/.config ]]; then
-   echo "Copiando directorio .config desde el repositorio dotfiles..."
-   cp -r ~/.dotfiles/.config .config
+elif [[ -d ~/.dotfiles/.config/nvim ]]; then
+   echo "Copiando directorio .config/nvim desde el repositorio dotfiles..."
+   cp -r ~/.dotfiles/.config/nvim .config/nvim
+fi
+
+# Verificar si existe configuracion de Neovim
+if [[ -d ~/.config/fish ]]; then
+   echo "Copiando directorio .config/fish desde $HOME/.config/fish..."
+   cp -r ~/.config/fish .config/fish
+# Si no existe en home, verificar si existe en el repositorio dotfiles
+elif [[ -d ~/.dotfiles/.config/fish ]]; then
+   echo "Copiando directorio .config/fish desde el repositorio dotfiles..."
+   cp -r ~/.dotfiles/.config/fish .config/fish
 fi
 
 # Verificar si existe el Dockerfile
