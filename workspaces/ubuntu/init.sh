@@ -37,5 +37,5 @@ if [[ ! -f ./Dockerfile ]]; then
 fi
 
 echo "Construyendo y ejecutando contenedor Docker..."
-docker build . -f Dockerfile -t clean && docker run --rm -it clean bash -c "ansible-playbook -i localhost, -c local playbook.yml && exec fish"
+docker build . -f Dockerfile -t clean && docker run --rm -it clean bash -c "ansible-playbook -i localhost, -c local bootstrap.yml && exec fish"
 
