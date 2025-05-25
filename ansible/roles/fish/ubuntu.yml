@@ -93,7 +93,7 @@
   when: ansible_distribution == "Ubuntu"
 
 - name: Incluir tareas de Fzf
-  ansible.builtin.import_tasks: fzf.yml # Usando el nombre corregido del archivo
+  ansible.builtin.import_tasks: ../fzf/main.yml # Usando el nombre corregido del archivo
   when: ansible_distribution == "Ubuntu"
 
 - name: Incluir tareas de The Silver Searcher
