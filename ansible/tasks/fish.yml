@@ -85,7 +85,7 @@
   when: ansible_distribution == "Ubuntu" # O la condición que aplique a eza
 
 - name: Incluir tareas de Bat
-  ansible.builtin.import_tasks: bat_ubuntu.yml # Usando el nombre corregido del archivo
+  ansible.builtin.import_tasks: bat.yml # Usando el nombre corregido del archivo
   when: ansible_distribution == "Ubuntu"
 
 # La copia de config.fish va DESPUÉS de instalar las herramientas que podría referenciar
