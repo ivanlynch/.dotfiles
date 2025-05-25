@@ -1,4 +1,8 @@
 ---
+- name: Debug playbook_dir
+  debug:
+    msg: "El valor de playbook_dir es: {{ playbook_dir }}"
+
 - name: Añadir repositorio de Fish
   apt_repository:
     repo: ppa:fish-shell/release-4
@@ -31,7 +35,7 @@
 
 - name: Copiar configuración de Fish
   copy:
-    src: "{{ playbook_dir }}/ansible/files/config.fish"
+    src: "{{ playbook_dir }}/../files/config.fish"
     dest: "{{ ansible_env.HOME }}/.config/fish/config.fish"
     mode: '0644'
 
