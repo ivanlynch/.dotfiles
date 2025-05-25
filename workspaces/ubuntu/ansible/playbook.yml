@@ -3,6 +3,10 @@
   hosts: localhost
   become: true
   tasks:
+    - name: Debug playbook_dir
+      debug:
+        msg: "El valor de playbook_dir es: {{ playbook_dir }}"
+
     - name: Update Aptitude
       apt:
         update_cache: yes

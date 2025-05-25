@@ -1,7 +1,11 @@
 ---
-- name: Debug playbook_dir
+- name: Debug playbook_dir en fish.yml
   debug:
-    msg: "El valor de playbook_dir es: {{ playbook_dir }}"
+    msg: "El valor de playbook_dir en fish.yml es: {{ playbook_dir }}"
+
+- name: Debug ansible_env.HOME
+  debug:
+    msg: "El valor de ansible_env.HOME es: {{ ansible_env.HOME }}"
 
 - name: Añadir repositorio de Fish
   apt_repository:
@@ -32,6 +36,10 @@
     - completions
     - conf.d
     - functions
+
+- name: Debug ruta del archivo config.fish
+  debug:
+    msg: "Intentando copiar desde: {{ playbook_dir }}/../files/config.fish"
 
 - name: Copiar configuración de Fish
   copy:
