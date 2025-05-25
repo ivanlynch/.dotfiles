@@ -129,25 +129,6 @@ done
 CURRENT_SHELL=$(basename "$SHELL")
 log "info" "Configurando alias para el shell: $CURRENT_SHELL"
 
-# Configurar alias para todos los shells disponibles
-if [[ -f "$HOME/.bashrc" ]]; then
-    if ! grep -q "alias dotfiles=" "$HOME/.bashrc"; then
-        echo 'alias dotfiles="git --git-dir=$HOME/.dotfiles --work-tree=$HOME"' >> "$HOME/.bashrc"
-    fi
-    if ! grep -q "alias dotfiles-pull=" "$HOME/.bashrc"; then
-        echo 'alias dotfiles-pull="$HOME/bin/dotfiles-sync"' >> "$HOME/.bashrc"
-    fi
-fi
-
-if [[ -f "$HOME/.zshrc" ]]; then
-    if ! grep -q "alias dotfiles=" "$HOME/.zshrc"; then
-        echo 'alias dotfiles="git --git-dir=$HOME/.dotfiles --work-tree=$HOME"' >> "$HOME/.zshrc"
-    fi
-    if ! grep -q "alias dotfiles-pull=" "$HOME/.zshrc"; then
-        echo 'alias dotfiles-pull="$HOME/bin/dotfiles-sync"' >> "$HOME/.zshrc"
-    fi
-fi
-
 if [[ -f "$HOME/.config/fish/config.fish" ]]; then
     mkdir -p "$HOME/.config/fish/functions"
     if ! grep -q "alias dotfiles=" "$HOME/.config/fish/config.fish"; then

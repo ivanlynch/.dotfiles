@@ -14,3 +14,5 @@
   - name: "Include task list in play"
     ansible.builtin.import_tasks:
       file: ansible/roles/neovim/main.yml
+  - name: Incluir tareas de Fish
+    ansible.builtin.import_tasks: ansible/tasks/fish.yml
