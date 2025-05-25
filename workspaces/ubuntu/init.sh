@@ -24,13 +24,17 @@ elif [[ -d ~/.dotfiles/ansible ]]; then
    cp -r ~/.dotfiles/ansible ansible
 fi
 
+pwd
+
 # Verificar si existe configuracion de Neovim
 if [[ -d ~/.config/nvim ]]; then
    echo "Copiando directorio .config/nvim desde $HOME/.config/nvim..."
+   mkdir .config
    cp -r ~/.config/nvim .config/nvim
 # Si no existe en home, verificar si existe en el repositorio dotfiles
 elif [[ -d ~/.dotfiles/.config/nvim ]]; then
    echo "Copiando directorio .config/nvim desde el repositorio dotfiles..."
+   mkdir .config
    cp -r ~/.dotfiles/.config/nvim .config/nvim
 fi
 

@@ -1,13 +1,4 @@
-.config/iterm2/.DS_Store
-.config/iterm2/AppSupport
-.config/raycast/
-.config/yarn/
-.config/zed/
-.config/github-copilot/
-.config/gh/
-.config/configstore/
-.config/.DS_Store
-.config/gtk-2.0/
+.config
 workspaces/*/ansible/**
 
 
