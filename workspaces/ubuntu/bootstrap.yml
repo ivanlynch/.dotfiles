@@ -1,40 +1,24 @@
 ---
 - name: Install Workspace
-  hosts: localhost # O tu host/container objetivo
-  become: yes # Esto hará que todas las tareas se ejecuten como root por defecto
-  # ansible_become_pass: "ivanlynch" # Descomentar si no usas otro método para la contraseña
+  hosts: localhost
+  become: yes
   vars:
-    # Define el usuario para el cual quieres configurar fish
-    # Si 'localhost' es tu propia máquina y quieres configurar para tu usuario actual,
-    # podrías intentar obtenerlo dinámicamente.
-    # Si 'localhost' es un container y quieres un usuario específico dentro de él:
-    target_fish_user: "ivanlynch" # O el nombre de usuario que desees en el target
-    # Construye la ruta al home del usuario objetivo.
+    target_fish_user: "ivanlynch"
     target_fish_user_home: "{{ (target_fish_user == 'root') | ternary('/root', '/home/' + target_fish_user) }}"
-    # La ruta a tu archivo config.fish personalizado
     custom_fish_config_src: "{{ playbook_dir }}/ansible/files/config.fish"
 
   pre_tasks:
     - name: Update Aptitude
-      ansible.builtin.apt: # Buena práctica usar FQCN
+      ansible.builtin.apt:
         upgrade: yes
         update_cache: yes
-        # state: latest # 'latest' en 'upgrade:yes' es redundante y puede causar problemas.
-        # 'upgrade: yes' ya actualiza todo a la última versión.
-        # 'state: present' o 'state: latest' se usa para paquetes individuales.
-      # 'become: true' aquí es heredado del play
 
   tasks:
     - name: Incluir tareas de instalación de Nerd Fonts para Ubuntu
       ansible.builtin.import_tasks: ansible/tasks/nerdfonts.yml
 
-    - name: "Include Neovim tasks" # Asumo que este es el propósito
-      ansible.builtin.import_tasks:
-        file:
-          ansible/roles/neovim/main.yml # Esto parece un path a un rol, no un simple archivo de tasks.
-          # Si es un rol, considera usar `include_role` o `import_role`.
+    - name: Incluir tareas de Neovim
+      ansible.builtin.import_tasks: ansible/roles/neovim/main.yml
 
     - name: Incluir tareas de Fish
-      ansible.builtin.import_tasks: ansible/tasks/fish.yml
-      # Las variables target_fish_user, target_fish_user_home, custom_fish_config_src
-      # estarán disponibles para las tareas en fish.yml
+      ansible.builtin.import_tasks: ansible/roles/fish/main.yml
