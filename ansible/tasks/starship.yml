@@ -1,0 +1,28 @@
+---
+- name: Starship | Instalar curl si no está presente
+  ansible.builtin.apt:
+    name: curl
+    state: present
+  # 'become: true' heredado
+
+# Tarea unificada para descargar y ejecutar el script de instalación de Starship
+- name: Starship | Instalar Starship usando el script oficial
+  ansible.builtin.shell:
+    cmd: "curl -sS https://starship.rs/install.sh | sh -s -- --yes"
+    # El 'sh -s -- --yes' es una forma de pasar argumentos al script a través del pipe.
+    # El '--yes' (o -y) es para auto-aceptar la instalación (el script de Starship lo soporta [1]).
+    executable: /bin/bash # O /bin/sh
+  args:
+    # Esto ayuda a Ansible a determinar si algo realmente cambió
+    # al crear un archivo específico que el script de Starship (generalmente) crea.
+    # La ubicación puede variar, pero /usr/local/bin/starship es común.
+    creates: /usr/local/bin/starship
+  # 'become: true' heredado (el script 'sh' puede invocar 'sudo' si es necesario,
+  # o si se ejecuta directamente como root, instalará en el lugar correcto).
+  register: starship_install_direct_result
+  changed_when: "'Starship installed' in starship_install_direct_result.stdout or starship_install_direct_result.rc != 0" # Ajustar esto según la salida real del script para mejor detección de cambios.                                                                              # O simplemente confiar en 'creates'.
+
+- name: Starship | Mostrar resultado de la instalación directa (debug)
+  ansible.builtin.debug:
+    var: starship_install_direct_result
+  when: starship_install_direct_result is defined

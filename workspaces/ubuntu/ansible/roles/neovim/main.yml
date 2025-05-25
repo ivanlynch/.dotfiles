@@ -1,8 +1,0 @@
----
-- name: Installing Neovim on Debian/Ubuntu
-  ansible.builtin.import_tasks: ubuntu.yml
-  when: ansible_os_family == 'Debian'
-
-- name: Installing Neovim on Arch Linux
-  ansible.builtin.import_tasks: arch.yml
-  when: ansible_os_family == 'Archlinux'
