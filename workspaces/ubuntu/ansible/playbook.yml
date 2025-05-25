@@ -1,7 +1,12 @@
 ---
-- name: Configurar Fish Shell
+- name: Install Workspace
   hosts: localhost
-  connection: local
+  become: true
   tasks:
-    - name: Incluir tareas de Fish
-      ansible.builtin.import_tasks: tasks/fish.yml
+    - name: Update Aptitude
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Include Fish tasks
+      include_tasks: tasks/fish.yml
