@@ -5,14 +5,14 @@
   vars:
     ansible_become_pass: "ivanlynch"
   pre_tasks:
-  - name: Update Aptitude
-    apt:
-      upgrade: yes
-      update_cache: yes
-      state: latest
+    - name: Update Aptitude
+      apt:
+        upgrade: yes
+        update_cache: yes
+        state: latest
   tasks:
-  - name: "Include task list in play"
-    ansible.builtin.import_tasks:
-      file: ansible/roles/neovim/main.yml
-  - name: Incluir tareas de Fish
-    ansible.builtin.import_tasks: ansible/tasks/fish.yml
+    - name: "Include task list in play"
+      ansible.builtin.import_tasks:
+        file: ansible/roles/neovim/main.yml
+    - name: Incluir tareas de Fish
+      ansible.builtin.import_tasks: ansible/tasks/fish.yml
