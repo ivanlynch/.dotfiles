@@ -43,6 +43,9 @@
 - name: Incluir tareas de Eza
   ansible.builtin.import_tasks: eza.yml
 
+- name: Incluir tareas de Bat
+  ansible.builtin.import_tasks: bat.yml
+
 - name: Fish | Copiar configuración de Fish personalizada
   ansible.builtin.copy:
     src: "{{ custom_fish_config_src }}" # Variable definida en bootstrap.yml

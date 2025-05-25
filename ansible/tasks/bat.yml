@@ -1,0 +1,92 @@
+---
+- name: Bat | Instalar bat (o batcat) en Ubuntu
+  ansible.builtin.apt:
+    name: bat # El paquete se llama 'bat' en los repositorios
+    state: present
+    update_cache: yes # Actualizar caché antes de intentar instalar
+  when: ansible_distribution == "Ubuntu"
+  # 'become: true' heredado del playbook principal
+  register: bat_install_result
+
+# La documentación de 'bat' indica que en Debian/Ubuntu,
+# el binario podría llamarse 'batcat'.
+# Verificamos si 'batcat' existe y si 'bat' no existe o no es un enlace al primero.
+- name: Bat | Comprobar si existe /usr/bin/batcat
+  ansible.builtin.stat:
+    path: /usr/bin/batcat
+  when: ansible_distribution == "Ubuntu"
+  register: batcat_stat
+  # No necesita 'become' para stat
+
+- name: Bat | Comprobar si existe /usr/bin/bat o ~/.local/bin/bat
+  ansible.builtin.stat:
+    path: "{{ item }}"
+  loop:
+    - /usr/bin/bat
+    - "{{ target_fish_user_home }}/.local/bin/bat" # Directorio de binarios del usuario
+  when: ansible_distribution == "Ubuntu"
+  register: bat_stat_results
+  # No necesita 'become' para stat
+
+- name: Bat | Determinar si el enlace simbólico para 'bat' es necesario
+  ansible.builtin.set_fact:
+    # El enlace es necesario si:
+    # 1. batcat existe Y
+    # 2. /usr/bin/bat no existe O /usr/bin/bat existe pero NO es un enlace a batcat Y
+    # 3. ~/.local/bin/bat no existe O ~/.local/bin/bat existe pero NO es un enlace a batcat
+    # Simplificamos: si batcat existe y no encontramos un 'bat' funcional, creamos el enlace en ~/.local/bin
+    create_bat_symlink: >-
+      {{
+        batcat_stat.stat.exists and
+        (
+          not bat_stat_results.results | selectattr('path', 'equalto', '/usr/bin/bat') | map(attribute='stat.exists') | first | default(false) or
+          (
+            bat_stat_results.results | selectattr('path', 'equalto', '/usr/bin/bat') | map(attribute='stat.exists') | first | default(false) and
+            bat_stat_results.results | selectattr('path', 'equalto', '/usr/bin/bat') | map(attribute='stat.islnk') | first | default(false) and
+            bat_stat_results.results | selectattr('path', 'equalto', '/usr/bin/bat') | map(attribute='stat.lnk_target') | first | default('') != '/usr/bin/batcat'
+          )
+        ) and
+        (
+          not bat_stat_results.results | selectattr('path', 'equalto', target_fish_user_home + '/.local/bin/bat') | map(attribute='stat.exists') | first | default(false) or
+          (
+            bat_stat_results.results | selectattr('path', 'equalto', target_fish_user_home + '/.local/bin/bat') | map(attribute='stat.exists') | first | default(false) and
+            bat_stat_results.results | selectattr('path', 'equalto', target_fish_user_home + '/.local/bin/bat') | map(attribute='stat.islnk') | first | default(false) and
+            bat_stat_results.results | selectattr('path', 'equalto', target_fish_user_home + '/.local/bin/bat') | map(attribute='stat.lnk_target') | first | default('') != '/usr/bin/batcat'
+          )
+        )
+      }}
+  when: ansible_distribution == "Ubuntu"
+
+- name: Bat | Crear directorio ~/.local/bin para el usuario si no existe
+  ansible.builtin.file:
+    path: "{{ target_fish_user_home }}/.local/bin"
+    state: directory
+    owner: "{{ target_fish_user }}"
+    group: "{{ target_fish_user }}"
+    mode: "0755"
+  when:
+    - ansible_distribution == "Ubuntu"
+    - create_bat_symlink | default(false)
+  # 'become: true' y 'become_user' o permisos adecuados para que el usuario cree su dir.
+  # Por simplicidad, si 'become: true' es global, esto funciona para crear y asignar propietario.
+
+- name: Bat | Crear enlace simbólico bat -> batcat en ~/.local/bin
+  ansible.builtin.file:
+    src: /usr/bin/batcat # El binario real
+    dest: "{{ target_fish_user_home }}/.local/bin/bat" # El enlace que queremos
+    owner: "{{ target_fish_user }}"
+    group: "{{ target_fish_user }}"
+    state: link # Asegura que es un enlace simbólico
+    force: yes # Sobrescribir si 'bat' existe y no es el enlace correcto
+  when:
+    - ansible_distribution == "Ubuntu"
+    - create_bat_symlink | default(false)
+  # 'become: true' y 'become_user' o permisos para que el usuario cree enlaces en su dir.
+  # Si 'become: true' es global, esto funciona para crear y asignar propietario.
+
+- name: Bat | Mostrar estado de la instalación (debug)
+  ansible.builtin.debug:
+    var: bat_install_result
+  when:
+    - ansible_distribution == "Ubuntu"
+    - bat_install_result is defined
