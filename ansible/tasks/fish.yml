@@ -33,7 +33,7 @@
 
 - name: Copiar configuración de Fish
   copy:
-    src: "{{ playbook_dir }}/../../../ansible/files/config.fish"
+    src: "{{ playbook_dir }}/../../../.config/fish/config.fish"
     dest: "{{ ansible_env.HOME }}/.config/fish/config.fish"
     mode: '0644'
     owner: "{{ ansible_env.USER }}"
