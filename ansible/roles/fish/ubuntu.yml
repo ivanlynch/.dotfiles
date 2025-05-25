@@ -6,7 +6,7 @@
 
 - name: Fish | Añadir repositorio de Fish PPA (Ubuntu)
   ansible.builtin.apt_repository:
-    repo: ppa:fish-shell/release-3 # Usamos release-3 que es el PPA oficial estable. release-4 no parece ser un PPA común.
+    repo: ppa:fish-shell/release-3
     state: present
     update_cache: yes
   when: ansible_distribution == "Ubuntu"
@@ -22,7 +22,7 @@
 - name: Fish | Asegurar que fish está en /etc/shells (Ubuntu)
   ansible.builtin.lineinfile:
     path: /etc/shells
-    line: /usr/bin/fish # Verificar con 'which fish' en el target si es diferente
+    line: /usr/bin/fish
     state: present
     create: yes
   when: ansible_distribution == "Ubuntu"
@@ -41,9 +41,9 @@
     state: directory
     owner: "{{ target_fish_user }}"
     group: "{{ target_fish_user }}"
-    mode: '0755'
+    mode: "0755"
   loop:
-    - "" # Para el directorio .config/fish en sí
+    - "" # Para .config/fish
     - "conf.d"
     - "completions"
     - "functions"
@@ -55,13 +55,12 @@
     dest: "{{ target_fish_user_home }}/.config/fish/conf.d/00_local_bin_path.fish"
     content: |
       # Añadir ~/.local/bin al PATH de fish
-      # Se ejecuta para sesiones interactivas y de inicio de sesión
       if status is-interactive; or status is-login
         fish_add_path -mP $HOME/.local/bin
       end
     owner: "{{ target_fish_user }}"
     group: "{{ target_fish_user }}"
-    mode: '0644'
+    mode: "0644"
   when: ansible_distribution == "Ubuntu"
   become: true
 
@@ -75,27 +74,47 @@
   when: ansible_distribution == "Ubuntu"
   become: true
 
-# Aquí importas las tareas para otras herramientas que fish podría necesitar o referenciar
+# --- AÑADIR LA COPIA DE config.fish AQUÍ ---
+# Copiar el config.fish base ANTES de que otras tareas (starship, fzf) intenten modificarlo.
+- name: Fish | Copiar configuración de Fish personalizada (config.fish) (Ubuntu)
+  ansible.builtin.copy:
+    src: "{{ custom_fish_config_src }}" # Definida en Dockerfile, ej: /app/ansible/files/config.fish
+    dest: "{{ target_fish_user_home }}/.config/fish/config.fish"
+    mode: "0644"
+    owner: "{{ target_fish_user }}"
+    group: "{{ target_fish_user }}"
+    remote_src: yes # ¡MUY IMPORTANTE si src es una ruta dentro de la imagen!
+  when: ansible_distribution == "Ubuntu"
+  become: true
+  register: fish_config_copy_status # Registrar para depuración
+
+- name: Fish | Mostrar estado de la copia de config.fish (debug)
+  ansible.builtin.debug:
+    var: fish_config_copy_status
+  when: fish_config_copy_status is defined # Mostrar solo si la tarea se ejecutó y registró algo
+
+# Ahora importar las tareas para otras herramientas que podrían modificar config.fish
+# o que dependen de la configuración base de fish.
 - name: Incluir tareas de Starship
-  ansible.builtin.import_tasks: ../starship/main.yml # Asegúrate que starship.yml existe y es correcto
-  when: ansible_distribution == "Ubuntu" # O la condición que aplique a starship
+  ansible.builtin.import_tasks: ../starship/main.yml
+  when: ansible_distribution == "Ubuntu"
 
 - name: Incluir tareas de Eza
-  ansible.builtin.import_tasks: ../eza/main.yml # Asegúrate que eza.yml existe y es correcto
-  when: ansible_distribution == "Ubuntu" # O la condición que aplique a eza
+  ansible.builtin.import_tasks: ../eza/main.yml
+  when: ansible_distribution == "Ubuntu"
 
 - name: Incluir tareas de Bat
-  ansible.builtin.import_tasks: ../bat/main.yml # Usando el nombre corregido del archivo
+  ansible.builtin.import_tasks: ../bat/main.yml
   when: ansible_distribution == "Ubuntu"
 
 - name: Incluir tareas de Zoxide
-  ansible.builtin.import_tasks: ../zoxide/main.yml # Usando el nombre corregido del archivo
+  ansible.builtin.import_tasks: ../zoxide/main.yml
   when: ansible_distribution == "Ubuntu"
 
 - name: Incluir tareas de Fzf
-  ansible.builtin.import_tasks: ../fzf/main.yml # Usando el nombre corregido del archivo
+  ansible.builtin.import_tasks: ../fzf/main.yml
   when: ansible_distribution == "Ubuntu"
 
 - name: Incluir tareas de The Silver Searcher
-  ansible.builtin.import_tasks: ../thesilversearcher/main.yml # Usando el nombre corregido del archivo
+  ansible.builtin.import_tasks: ../thesilversearcher/main.yml
   when: ansible_distribution == "Ubuntu"
