@@ -1,72 +1,108 @@
-# ansible/tasks/fish.yml
 ---
-# Las variables target_fish_user, target_fish_user_home y custom_fish_config_src
-# se esperan definidas en el playbook que importa este archivo.
+# ansible/tasks/fish_ubuntu.yml
+# Asume que las variables target_fish_user, target_fish_user_home, y custom_fish_config_src
+# están definidas en el playbook que importa este archivo.
+# Asume 'become: true' global o en cada tarea que lo necesite.
 
-- name: Fish | Añadir repositorio de Fish PPA (Debian/Ubuntu)
+- name: Fish | Añadir repositorio de Fish PPA (Ubuntu)
   ansible.builtin.apt_repository:
-    repo: ppa:fish-shell/release-4 # O la versión/PPA que necesites
+    repo: ppa:fish-shell/release-3 # Usamos release-3 que es el PPA oficial estable. release-4 no parece ser un PPA común.
     state: present
     update_cache: yes
-  # 'become: true' heredado del play en bootstrap.yml
+  when: ansible_distribution == "Ubuntu"
+  become: true
 
-- name: Fish | Instalar Fish shell
+- name: Fish | Instalar Fish shell (Ubuntu)
   ansible.builtin.apt:
     name: fish
     state: present
-  # 'become: true' heredado
+  when: ansible_distribution == "Ubuntu"
+  become: true
 
-- name: Fish | Asegurar que fish está en /etc/shells
+- name: Fish | Asegurar que fish está en /etc/shells (Ubuntu)
   ansible.builtin.lineinfile:
     path: /etc/shells
     line: /usr/bin/fish # Verificar con 'which fish' en el target si es diferente
     state: present
     create: yes
-  # 'become: true' heredado
+  when: ansible_distribution == "Ubuntu"
+  become: true
 
-- name: Fish | Crear directorio de configuración de Fish principal si no existe
+- name: Fish | Cambiar shell por defecto a Fish para el usuario {{ target_fish_user }} (Ubuntu)
+  ansible.builtin.user:
+    name: "{{ target_fish_user }}"
+    shell: /usr/bin/fish
+  when: ansible_distribution == "Ubuntu"
+  become: true
+
+- name: Fish | Crear directorios de configuración de Fish para el usuario (Ubuntu)
   ansible.builtin.file:
-    path: "{{ target_fish_user_home }}/.config/fish" # Ruta completa al directorio de fish
-    state: directory # Asegura que es un directorio
-    owner: "{{ target_fish_user }}" # Establece el propietario
-    group: "{{ target_fish_user }}" # Establece el grupo
-    mode: "0755" # Establece los permisos
-  # 'become: true' heredado (root crea el dir y setea owner/group)
-  # Esta tarea es idempotente: solo crea el directorio si no existe [3].
-  # Si ya existe, Ansible se asegura de que los permisos, propietario y grupo sean los especificados.
-
-- name: Incluir tareas de Startship
-  ansible.builtin.import_tasks: starship.yml
-  # Las variables target_fish_user, target_fish_user_home, custom_fish_config_src
-  # estarán disponibles para las tareas en fish.yml
-
-- name: Incluir tareas de Eza
-  ansible.builtin.import_tasks: eza.yml
-
-- name: Incluir tareas de Bat
-  ansible.builtin.import_tasks: bat.yml
-
-- name: Fish | Copiar configuración de Fish personalizada
-  ansible.builtin.copy:
-    src: "{{ custom_fish_config_src }}" # Variable definida en bootstrap.yml
-    dest: "{{ target_fish_user_home }}/.config/fish/config.fish"
-    mode: "0644"
+    path: "{{ target_fish_user_home }}/.config/fish/{{ item }}"
+    state: directory
     owner: "{{ target_fish_user }}"
     group: "{{ target_fish_user }}"
-  # 'become: true' heredado
-  register: fish_copy_result
+    mode: '0755'
+  loop:
+    - "" # Para el directorio .config/fish en sí
+    - "conf.d"
+    - "completions"
+    - "functions"
+  when: ansible_distribution == "Ubuntu"
+  become: true
 
-- name: Fish | Instalar dependencias (curl, git, wget)
+- name: Fish | Añadir ~/.local/bin al PATH de fish (vía conf.d) (Ubuntu)
+  ansible.builtin.copy:
+    dest: "{{ target_fish_user_home }}/.config/fish/conf.d/00_local_bin_path.fish"
+    content: |
+      # Añadir ~/.local/bin al PATH de fish
+      # Se ejecuta para sesiones interactivas y de inicio de sesión
+      if status is-interactive; or status is-login
+        fish_add_path -mP $HOME/.local/bin
+      end
+    owner: "{{ target_fish_user }}"
+    group: "{{ target_fish_user }}"
+    mode: '0644'
+  when: ansible_distribution == "Ubuntu"
+  become: true
+
+- name: Fish | Instalar dependencias generales (curl, git, wget) (Ubuntu)
   ansible.builtin.apt:
     name:
       - curl
       - git
       - wget
     state: present
-  # 'become: true' heredado
+  when: ansible_distribution == "Ubuntu"
+  become: true
 
-- name: Fish | Cambiar shell por defecto a Fish para el usuario {{ target_fish_user }}
-  ansible.builtin.user:
-    name: "{{ target_fish_user }}"
-    shell: /usr/bin/fish # Verificar con 'which fish'
-  # 'become: true' heredado
+# Aquí importas las tareas para otras herramientas que fish podría necesitar o referenciar
+- name: Incluir tareas de Starship
+  ansible.builtin.import_tasks: starship.yml # Asegúrate que starship.yml existe y es correcto
+  when: ansible_distribution == "Ubuntu" # O la condición que aplique a starship
+
+- name: Incluir tareas de Eza
+  ansible.builtin.import_tasks: eza.yml # Asegúrate que eza.yml existe y es correcto
+  when: ansible_distribution == "Ubuntu" # O la condición que aplique a eza
+
+- name: Incluir tareas de Bat
+  ansible.builtin.import_tasks: bat_ubuntu.yml # Usando el nombre corregido del archivo
+  when: ansible_distribution == "Ubuntu"
+
+# La copia de config.fish va DESPUÉS de instalar las herramientas que podría referenciar
+- name: Fish | Copiar configuración de Fish personalizada (config.fish) (Ubuntu)
+  ansible.builtin.copy:
+    src: "{{ custom_fish_config_src }}" # Definida en bootstrap.yml, ej: "{{ playbook_dir }}/ansible/files/config.fish"
+    dest: "{{ target_fish_user_home }}/.config/fish/config.fish"
+    mode: '0644'
+    owner: "{{ target_fish_user }}"
+    group: "{{ target_fish_user }}"
+  when: ansible_distribution == "Ubuntu"
+  become: true
+  register: fish_config_copy_result
+
+- name: Fish | Mostrar resultado de la copia de config.fish (debug)
+  ansible.builtin.debug:
+    var: fish_config_copy_result
+  when:
+    - ansible_distribution == "Ubuntu"
+    - fish_config_copy_result is defined

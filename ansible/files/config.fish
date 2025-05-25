@@ -1,106 +1,71 @@
 # ~/.config/fish/config.fish
+# (Copiado por Ansible desde la máquina controladora)
 # ------------------------------------------------------------
 # Configuración general de entorno y PATH (siempre disponible)
 # ------------------------------------------------------------
+# NOTA: La configuración de PATH para $HOME/.local/bin ahora se maneja
+# a través de un archivo en ~/.config/fish/conf.d/ para asegurar
+# que se cargue temprano y correctamente.
 
-# Java (Ajusta la ruta si es diferente en Linux o si usas asdf/sdkman)
+# Java (Ejemplo, ajusta según tu método de instalación: asdf, sdkman, manual)
 if test (uname) = "Darwin"
-    fish_add_path /opt/homebrew/opt/openjdk@11/bin
+    if test -d /opt/homebrew/opt/openjdk@11/bin
+        fish_add_path -mP /opt/homebrew/opt/openjdk@11/bin
+    end
 end
 
-# Android (Ajusta las rutas si son diferentes en Linux)
+# Android (Ejemplo, ajusta según tu método de instalación)
 if test (uname) = "Darwin"
-    set -gx ANDROID_HOME $HOME/Library/Android/sdk
-    set -gx ANDROID_SDK_ROOT $HOME/Library/Android/sdk
-    fish_add_path $ANDROID_HOME/emulator
-    fish_add_path $ANDROID_HOME/tools
-    fish_add_path $ANDROID_HOME/tools/bin
-    fish_add_path $ANDROID_HOME/platform-tools
-else # Linux
-    # Podrías definir rutas alternativas para Android SDK en Linux si lo usas allí
-    # Por ejemplo:
-    # set -gx ANDROID_HOME $HOME/Android/Sdk
-    # fish_add_path $ANDROID_HOME/emulator ... etc.
+    set -q ANDROID_HOME; or set -gx ANDROID_HOME $HOME/Library/Android/sdk
+    set -q ANDROID_SDK_ROOT; or set -gx ANDROID_SDK_ROOT $HOME/Library/Android/sdk
+    if test -n "$ANDROID_HOME"
+        fish_add_path -mP $ANDROID_HOME/emulator
+        fish_add_path -mP $ANDROID_HOME/tools
+        fish_add_path -mP $ANDROID_HOME/tools/bin
+        fish_add_path -mP $ANDROID_HOME/platform-tools
+    end
 end
 
-
-# pipx (Generalmente $HOME/.local/bin está en PATH por defecto en sistemas modernos)
-fish_add_path $HOME/.local/bin
-
-# pyenv
-set -gx PYENV_ROOT $HOME/.pyenv
-if test -d "$PYENV_ROOT" # Solo añade a PATH e inicializa si pyenv está instalado
-    fish_add_path $PYENV_ROOT/bin
+# pyenv (si lo usas)
+set -q PYENV_ROOT; or set -gx PYENV_ROOT $HOME/.pyenv
+if test -d "$PYENV_ROOT"
+    fish_add_path -mP $PYENV_ROOT/bin
     if type -q pyenv
-        pyenv init - | source
+        # pyenv init --path | source # Para solo el path
+        pyenv init - | source   # Para shims y autocompletado
     end
 end
 
-# curl (Homebrew, específico de macOS si se instaló allí)
-if test (uname) = "Darwin"
-    fish_add_path /opt/homebrew/opt/curl/bin
-end
-
-# asdf (Gestor de versiones)
-if test -d "$HOME/.asdf"
-    # Añadir shims y completions de asdf
-    # La forma recomendada por asdf es sourcear su script:
+# asdf (Gestor de versiones, si lo usas)
+if test -f "$HOME/.asdf/asdf.fish"
     source "$HOME/.asdf/asdf.fish"
-    # Las siguientes líneas son alternativas o complementarias, asdf.fish suele encargarse
-    # set -gx PATH "$HOME/.asdf/shims" $PATH
-    # if type -q asdf
-    #     mkdir -p ~/.config/fish/completions
-    #     asdf completion fish > ~/.config/fish/completions/asdf.fish
-    # end
 end
 
-# Puppeteer (solución multiplataforma, asume que chromium está en PATH)
+# Puppeteer (ejemplo, si lo usas)
 if type -q chromium
-    set -gx PUPPETEER_EXECUTABLE_PATH (command -v chromium)
+    set -q PUPPETEER_EXECUTABLE_PATH; or set -gx PUPPETEER_EXECUTABLE_PATH (command -v chromium)
 else if type -q chromium-browser
-    set -gx PUPPETEER_EXECUTABLE_PATH (command -v chromium-browser)
+    set -q PUPPETEER_EXECUTABLE_PATH; or set -gx PUPPETEER_EXECUTABLE_PATH (command -v chromium-browser)
 end
-set -gx PUPPETEER_SKIP_CHROMIUM_DOWNLOAD true
+set -q PUPPETEER_SKIP_CHROMIUM_DOWNLOAD; or set -gx PUPPETEER_SKIP_CHROMIUM_DOWNLOAD true
 
-# Homebrew (soporte multiplataforma)
-if test -d /home/linuxbrew/.linuxbrew # Linuxbrew
-    set -gx HOMEBREW_PREFIX "/home/linuxbrew/.linuxbrew"
-else if test -d /opt/homebrew # Homebrew en macOS ARM
-    set -gx HOMEBREW_PREFIX "/opt/homebrew"
-else if test -d /usr/local/Homebrew # Homebrew en macOS Intel (más antiguo)
-    set -gx HOMEBREW_PREFIX "/usr/local/Homebrew"
-end
-
-if test -n "$HOMEBREW_PREFIX"
-    set -gx HOMEBREW_CELLAR "$HOMEBREW_PREFIX/Cellar"
-    set -gx HOMEBREW_REPOSITORY "$HOMEBREW_PREFIX/Homebrew" # Ajusta si tu repo está en otro lado
-    fish_add_path -gP "$HOMEBREW_PREFIX/bin" "$HOMEBREW_PREFIX/sbin"
-
-    # Configurar MANPATH e INFOPATH si no están ya configurados para incluir Homebrew
-    # Esto previene añadir duplicados o rutas incorrectas
-    set -l man_path_to_add "$HOMEBREW_PREFIX/share/man"
-    if not contains -- "$man_path_to_add" $MANPATH
-        if test -z "$MANPATH" # Si MANPATH está vacío
-            set -gx MANPATH "$man_path_to_add"
-        else
-            set -gx MANPATH "$man_path_to_add" $MANPATH
-        end
+# Homebrew PATH (si aplica)
+if test (uname) = "Darwin"
+    if test -d /opt/homebrew # macOS ARM
+        fish_add_path -mP /opt/homebrew/bin /opt/homebrew/sbin
+    else if test -d /usr/local/Homebrew # macOS Intel (ruta más antigua)
+         fish_add_path -mP /usr/local/Homebrew/bin /usr/local/Homebrew/sbin
+    else if test -d /usr/local/bin # macOS Intel (ruta común)
+         fish_add_path -mP /usr/local/bin /usr/local/sbin
     end
-
-    set -l info_path_to_add "$HOMEBREW_PREFIX/share/info"
-    if not contains -- "$info_path_to_add" $INFOPATH
-        if test -z "$INFOPATH" # Si INFOPATH está vacío
-            set -gx INFOPATH "$info_path_to_add"
-        else
-            set -gx INFOPATH "$info_path_to_add" $INFOPATH
-        end
-    end
+else if test -d /home/linuxbrew/.linuxbrew # Linuxbrew
+    fish_add_path -mP /home/linuxbrew/.linuxbrew/bin /home/linuxbrew/.linuxbrew/sbin
 end
 
 # Windsurf (Solo si estás en macOS y tienes esta app)
 if test (uname) = "Darwin"
     if test -d "/Applications/Windsurf.app"
-        fish_add_path -gP "/Applications/Windsurf.app/Contents/MacOS"
+        fish_add_path -mP "/Applications/Windsurf.app/Contents/MacOS"
     end
 end
 
@@ -121,47 +86,52 @@ if status is-interactive
 
     # Aliases generales
     alias reload="source ~/.config/fish/config.fish"
-    alias edit="nvim ~/.config/fish/config.fish" # Asume nvim está instalado
-    alias config="cd ~/.config/nvim; nvim ."    # Asume nvim y esa ruta de config
-    alias dotfiles="git --git-dir=$HOME/.dotfiles --work-tree=$HOME"
-    alias ws="cd ~/workspaces" # Ajusta si tu directorio de workspaces es otro
-    alias an="cd ~/ansible"   # Ajusta si tu directorio de ansible es otro
+    alias edit="command nvim ~/.config/fish/config.fish" # Usar 'command nvim' para evitar alias de nvim
+    alias config="cd ~/.config/nvim && command nvim ."
+    alias dotfiles="command git --git-dir=$HOME/.dotfiles --work-tree=$HOME"
+    alias ws="cd ~/workspaces"
+    alias an="cd ~/ansible"
 
-    # Alias específicos de macOS (no fallarán en Linux, simplemente no harán nada útil)
+    # Alias específicos de macOS
     if test (uname) = "Darwin"
-        alias dotfiles-pull="$HOME/bin/dotfiles-sync" # Asume que este script existe en macOS
-        alias tmuxconf="nvim $HOME/.tmux.conf"       # Asume tmux.conf en esa ruta
-        alias itermconf="open $HOME/.config/iterm2"  # 'open' es de macOS
-        alias surf="/Applications/Windsurf.app/Contents/MacOS/Electron" # App de macOS
-        alias ubuntu="chmod +x ~/workspaces/ubuntu/init.sh; ~/workspaces/ubuntu/init.sh" # Script específico de tu setup
+        alias dotfiles-pull="$HOME/bin/dotfiles-sync"
+        alias tmuxconf="command nvim $HOME/.tmux.conf"
+        alias itermconf="open $HOME/.config/iterm2"
+        alias surf="/Applications/Windsurf.app/Contents/MacOS/Electron"
+        alias ubuntu="chmod +x ~/workspaces/ubuntu/init.sh && ~/workspaces/ubuntu/init.sh"
     end
 
-    # Alias condicional para 'dev' según SO
-    switch (uname)
-        case Darwin
-            alias dev="cd ~/dev" # Ajusta si tu dir dev es otro
-        case Linux
-            # Soporte para WSL y Linux nativo
-            if test -d "/mnt/c/Users/IvanL/dev" # Ruta muy específica de TU config WSL
-                alias dev="cd /mnt/c/Users/IvanL/dev"
-            else
-                alias dev="cd ~/dev" # Ajusta si tu dir dev es otro en Linux
-            end
+    # Alias condicional para 'dev'
+    if test (uname) = "Darwin"
+        alias dev="cd ~/dev"
+    else # Linux
+        if test -d "/mnt/c/Users/IvanL/dev" # Ruta específica de tu WSL
+            alias dev="cd /mnt/c/Users/IvanL/dev"
+        else
+            alias dev="cd ~/dev"
+        end
     end
 
     # Alias adicionales útiles
-    alias l="ls -la" # Clásico alias
+    alias l="command ls -la" # Usar 'command ls' para el ls del sistema si 'ls' está aliasado a eza
 
     # 'ls' con 'eza' (si está instalado)
     if type -q eza
         alias ls="eza --color=always --long --git --icons=always --time-style=long-iso --no-user --no-permissions"
-        # He ajustado algunos flags de eza para una salida común, puedes personalizarlos.
-        # --no-filesize quitado, --time-style añadido, --no-time quitado.
     end
     
-    # 'cat' con 'bat' (si está instalado)
+    # 'cat' con 'bat' (si bat está instalado)
     if type -q bat
         if test (uname) = "Darwin" # Para macOS, intenta detectar tema claro/oscuro
-            alias cat="bat --theme=(defaults read -globalDomain AppleInterfaceStyle &> /dev/null && echo default || echo GitHub)"
-        else # Para Linux (contenedor) u otros, usa un tema fijo
-            alias cat="
+            alias cat="bat --theme=(command defaults read -globalDomain AppleInterfaceStyle &> /dev/null && echo default || echo GitHub)"
+        else # Para Linux (contenedor Docker) u otros, usa un tema fijo
+            alias cat="bat --theme='GitHub'" # Puedes cambiar 'GitHub' por tu tema preferido
+        end
+    end
+
+    # 'cd' con 'z' (zoxide) (si está instalado)
+    if type -q z
+        alias cd="z"
+    end
+
+end # Fin de 'if status is-interactive'

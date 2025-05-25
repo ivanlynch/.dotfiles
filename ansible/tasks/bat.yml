@@ -5,32 +5,30 @@
   ansible.builtin.apt:
     name: bat # El paquete se llama 'bat' en los repositorios de Ubuntu 20.04+
     state: present
-    update_cache: yes # Actualizar caché antes de intentar instalar
+    update_cache: yes
   when: ansible_distribution == "Ubuntu"
-  become: true # Necesario para apt
+  become: true
   register: bat_install_result
 
-# La documentación de 'bat' indica que en Debian/Ubuntu,
-# el binario podría llamarse 'batcat' debido a un conflicto de nombres.
 - name: Bat | Comprobar si existe /usr/bin/batcat
   ansible.builtin.stat:
     path: /usr/bin/batcat
   when: ansible_distribution == "Ubuntu"
-  become: false # stat no necesita become
+  become: false
   register: batcat_stat
 
 - name: Bat | Comprobar si existe /usr/bin/bat
   ansible.builtin.stat:
     path: /usr/bin/bat
   when: ansible_distribution == "Ubuntu"
-  become: false # stat no necesita become
+  become: false
   register: usr_bin_bat_stat
 
 - name: Bat | Comprobar si existe ~/.local/bin/bat
   ansible.builtin.stat:
     path: "{{ target_fish_user_home }}/.local/bin/bat"
   when: ansible_distribution == "Ubuntu"
-  become: false # stat no necesita become
+  become: false
   register: local_bin_bat_stat
 
 - name: Bat | Determinar si el enlace simbólico para 'bat' en ~/.local/bin es necesario
@@ -44,13 +42,13 @@
           {% if not (local_bin_bat_stat.stat.exists and local_bin_bat_stat.stat.islnk and local_bin_bat_stat.stat.lnk_target == '/usr/bin/batcat') %}
             true
           {% else %}
-            false {# ~/.local/bin/bat ya es el enlace correcto #}
+            false
           {% endif %}
         {% else %}
-          false {# /usr/bin/bat ya es el enlace correcto, no se necesita en .local/bin #}
+          false
         {% endif %}
       {% else %}
-        false {# /usr/bin/batcat no existe, no se puede crear el enlace #}
+        false
       {% endif %}
   when: ansible_distribution == "Ubuntu"
 
@@ -60,24 +58,24 @@
     state: directory
     owner: "{{ target_fish_user }}"
     group: "{{ target_fish_user }}"
-    mode: "0755"
+    mode: '0755'
   when:
     - ansible_distribution == "Ubuntu"
     - create_bat_symlink_in_local_bin | default(false)
-  become: true # Para asegurar propietario/grupo, aunque el usuario podría crear su propio dir.
+  become: true
 
 - name: Bat | Crear enlace simbólico bat -> batcat en ~/.local/bin (si es necesario)
   ansible.builtin.file:
-    src: /usr/bin/batcat # El binario real (debe existir si create_bat_symlink_in_local_bin es true)
-    dest: "{{ target_fish_user_home }}/.local/bin/bat" # El enlace que queremos
-    owner: "{{ target_fish_user }}"
-    group: "{{ target_fish_user }}"
-    state: link # Asegura que es un enlace simbólico
-    force: yes # Sobrescribir si 'bat' existe y no es el enlace correcto a batcat
+    src: /usr/bin/batcat
+    dest: "{{ target_fish_user_home }}/.local/bin/bat"
+    owner: "{{ target_fish_user }}" # Propietario correcto
+    group: "{{ target_fish_user }}" # Grupo correcto
+    state: link
+    force: yes
   when:
     - ansible_distribution == "Ubuntu"
     - create_bat_symlink_in_local_bin | default(false)
-  become: true # Para asegurar propietario/grupo.
+  become: true
 
 - name: Bat | Mostrar estado de la instalación (debug)
   ansible.builtin.debug:
