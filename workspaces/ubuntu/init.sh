@@ -20,6 +20,7 @@ echo "Archivo de commit anterior: $LAST_PROCESSED_COMMIT_FILE"
 if [[ ! -d "$DISK_DIR" ]]; then
     echo "Creando directorio de caché: $DISK_DIR"
     mkdir -p "$DISK_DIR"
+    chmod 755 "$DISK_DIR"
 fi
 
 # Verificar si el comando dotfiles está disponible
@@ -107,6 +108,8 @@ if [[ "$SHOULD_UPDATE" = true ]]; then
         echo "Guardando nuevo commit: $CURRENT_DOTFILES_COMMIT en $LAST_PROCESSED_COMMIT_FILE"
         echo "$CURRENT_DOTFILES_COMMIT" > "$LAST_PROCESSED_COMMIT_FILE"
         echo "$CURRENT_DOTFILES_COMMIT" > "$INSTALLATION_ID"
+        chmod 644 "$LAST_PROCESSED_COMMIT_FILE"
+        chmod 644 "$INSTALLATION_ID"
         
         # Verificar que el commit se guardó correctamente
         if [[ -f "$LAST_PROCESSED_COMMIT_FILE" ]]; then
@@ -114,6 +117,8 @@ if [[ "$SHOULD_UPDATE" = true ]]; then
             cat "$LAST_PROCESSED_COMMIT_FILE"
             echo "Permisos del archivo:"
             ls -l "$LAST_PROCESSED_COMMIT_FILE"
+            echo "Contenido del directorio de caché:"
+            ls -la "$DISK_DIR"
         else
             echo "ERROR: No se pudo guardar el archivo de commit"
             exit 1
