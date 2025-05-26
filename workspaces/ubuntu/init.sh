@@ -8,13 +8,11 @@ echo "Preparando contexto de build para Docker..."
 # --- Lógica para preparar el directorio ./ansible y ./.config basada en commit de Git ---
 
 # Ruta a tu repositorio local de dotfiles (ajusta si es necesario)
-DOTFILES_REPO_PATH="$HOME/.dotfiles"
-# Archivo en el contexto de build para almacenar el último commit procesado
-LAST_PROCESSED_COMMIT_FILE="./.last_dotfiles_commit"
+CACHE_PATH="$HOME/.installation"
 
 # Verificar si el directorio de dotfiles existe y es un repo Git
-if [[ -d "$DOTFILES_REPO_PATH" && -d "$DOTFILES_REPO_PATH/.git" ]]; then
-    CURRENT_DOTFILES_COMMIT=$(git -C "$DOTFILES_REPO_PATH" rev-parse HEAD) # [10]
+if [[ -d "$CACHE_PATH" ]]; then
+    CURRENT_DOTFILES_COMMIT=$(dotfiles log --format="%H" -n 1) # [10]
     PREVIOUS_DOTFILES_COMMIT=""
 
     if [[ -f "$LAST_PROCESSED_COMMIT_FILE" ]]; then
@@ -29,47 +27,42 @@ if [[ -d "$DOTFILES_REPO_PATH" && -d "$DOTFILES_REPO_PATH/.git" ]]; then
 
         # --- Lógica para preparar el directorio ./ansible ---
         echo "Preparando ./ansible..."
-        [[ -d ./ansible ]] && rm -rf ./ansible
-        if [[ -d $DOTFILES_REPO_PATH/ansible ]]; then # Asumiendo que 'ansible' está dentro de '.dotfiles'
-            echo "Copiando directorio ansible desde $DOTFILES_REPO_PATH/ansible a ./ansible..."
-            cp -rf "$DOTFILES_REPO_PATH/ansible" ./ansible
-        else
-            echo "ADVERTENCIA: No se encontró $DOTFILES_REPO_PATH/ansible."
+        if [[ -d ./ansible ]]; then
+		echo "Eliminado directorio ansible"
+		rm -rf ./ansible
+	fi
+
+        if [[ -d ~/ansible ]]; then # Asumiendo que 'ansible' está dentro de '.dotfiles'
+            echo "Copiando directorio ansible desde ~/ansible a ./ansible..."
+            cp -rf ~/ansible ./ansible
         fi
 
         # --- Lógica para preparar el directorio ./.config ---
-        echo "Preparando ./.config..."
-        [[ -d ./.config ]] && rm -rf ./.config
-        mkdir -p ./.config # Crear el directorio .config en el contexto de build
+        echo "Preparando ./config..."
+        if [[ -d ./.config ]]; then
+		echo "Eliminado directorio .config"
+		rm -rf ./.config
+	fi
 
-        # Copiar selectivamente desde $DOTFILES_REPO_PATH/.config
-        if [[ -d "$DOTFILES_REPO_PATH/.config/nvim" ]]; then
-            echo "Copiando .config/nvim desde $DOTFILES_REPO_PATH/.config/nvim a ./.config/nvim..."
-            cp -rf "$DOTFILES_REPO_PATH/.config/nvim" ./.config/nvim
-        else
-            echo "ADVERTENCIA: No se encontró fuente para la configuración de Neovim en dotfiles."
+	mkdir ./.config
+
+
+        if [[ -d ~/.config/fish ]]; the
+            echo "Copiando directorio fish desde ~/.config/fish a ./.config/fish..."
+            cp -rf ~/.config/fish ./.config/fish
         fi
 
-        if [[ -d "$DOTFILES_REPO_PATH/.config/fish" ]]; then
-            echo "Copiando .config/fish desde $DOTFILES_REPO_PATH/.config/fish a ./.config/fish..."
-            cp -rf "$DOTFILES_REPO_PATH/.config/fish" ./.config/fish
-        else
-            echo "ADVERTENCIA: No se encontró fuente para la configuración de Fish en dotfiles."
-        fi
-        # ... (añade más según sea necesario para otras configuraciones en .dotfiles/.config) ...
 
-        # Actualizar el archivo con el nuevo commit procesado
+        if [[ -d ~/.config/nvim ]]; then
+            echo "Copiando directorio nvim desde ~/.config/nvim a ./.config/nvim..."
+            cp -rf ~/.config/nvim ./.config/nvim
+        fi
+
         echo "$CURRENT_DOTFILES_COMMIT" > "$LAST_PROCESSED_COMMIT_FILE"
         echo "Contexto de build actualizado."
     else
         echo "El repositorio de dotfiles no ha cambiado. Usando contexto de build existente."
     fi
-else
-    echo "ADVERTENCIA: El repositorio de dotfiles en $DOTFILES_REPO_PATH no se encontró o no es un repositorio Git."
-    echo "Se intentará construir con el contexto existente, si lo hay, o fallará si los archivos no están."
-    # Aquí podrías tener una lógica de fallback si los directorios no existen y es la primera vez.
-    # Por ahora, asumimos que si no hay dotfiles, y no hay copia previa, el build podría fallar
-    # si el Dockerfile espera que estos directorios existan.
 fi
 
 
@@ -90,8 +83,8 @@ if [ $? -ne 0 ]; then
 fi
 
 # ... (resto de tu script para ejecutar el contenedor) ...
-DISK_DIR="/home/ivanlynch/workspaces/ubuntu/disk"
-CONTAINER_USER_HOME="/home/ivanlynch"
+DISK_DIR="$HOME/workspaces/ubuntu/cache"
+CONTAINER_USER_HOME="$HOME"
 mkdir -p "${DISK_DIR}"
 echo "Ejecutando contenedor Docker preconfigurado con home persistente..."
 docker run --rm -it \
