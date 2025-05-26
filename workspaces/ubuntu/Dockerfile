@@ -44,8 +44,8 @@ COPY . .
 # NO deberían intentar copiar o modificar config.fish ni conf.d directamente.
 # Solo deben instalar paquetes y asegurar que fish sea el shell por defecto.
 RUN ansible-playbook -i localhost, -c local bootstrap.yml \
-    -e "target_fish_user=${USER_NAME}" \
-    -e "target_fish_user_home=${USER_HOME}"
+    -e "user_name=${USER_NAME}" \
+    -e "user_home=${USER_HOME}"
     # No pasar custom_fish_config_src si Ansible no va a copiar config.fish
 
 # --- COPIAR LA CONFIGURACIÓN DEL USUARIO DESDE EL HOST Y ARREGLAR PERMISOS ---
