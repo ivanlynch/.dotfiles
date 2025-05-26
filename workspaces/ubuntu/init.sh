@@ -13,8 +13,12 @@ CONTAINER_USER_HOME="/home/$USER"
 INSTALLATION_ID="$DISK_DIR/.installation_id"
 LAST_PROCESSED_COMMIT_FILE="$DISK_DIR/.last_processed_commit"
 
+echo "Directorio de caché: $DISK_DIR"
+echo "Archivo de commit anterior: $LAST_PROCESSED_COMMIT_FILE"
+
 # Verificar si el directorio de dotfiles existe y es un repo Git
 if [[ ! -d "$DISK_DIR" ]]; then
+    echo "Creando directorio de caché: $DISK_DIR"
     mkdir -p "$DISK_DIR"
 fi
 
@@ -35,6 +39,7 @@ PREVIOUS_DOTFILES_COMMIT=""
 
 if [[ -f "$LAST_PROCESSED_COMMIT_FILE" ]]; then
     PREVIOUS_DOTFILES_COMMIT=$(cat "$LAST_PROCESSED_COMMIT_FILE")
+    echo "Leyendo commit anterior desde: $LAST_PROCESSED_COMMIT_FILE"
 fi
 
 echo "Commit actual de dotfiles: $CURRENT_DOTFILES_COMMIT"
@@ -54,8 +59,12 @@ if [[ -z "$CURRENT_DOTFILES_COMMIT" ]] || [[ -z "$PREVIOUS_DOTFILES_COMMIT" ]]; 
 # Si hay un cambio en el commit, forzar la actualización
 elif [[ "$CURRENT_DOTFILES_COMMIT" != "$PREVIOUS_DOTFILES_COMMIT" ]]; then
     echo "Cambio detectado en el repositorio de dotfiles. Forzando actualización del contexto..."
+    echo "Commit actual: $CURRENT_DOTFILES_COMMIT"
+    echo "Commit anterior: $PREVIOUS_DOTFILES_COMMIT"
     SHOULD_UPDATE=true
 fi
+
+echo "Estado de actualización: SHOULD_UPDATE=$SHOULD_UPDATE"
 
 if [[ "$SHOULD_UPDATE" = true ]]; then
     echo "Actualizando contexto de build..."
@@ -95,8 +104,11 @@ if [[ "$SHOULD_UPDATE" = true ]]; then
     fi
 
     if [[ -n "$CURRENT_DOTFILES_COMMIT" ]]; then
+        echo "Guardando nuevo commit: $CURRENT_DOTFILES_COMMIT en $LAST_PROCESSED_COMMIT_FILE"
         echo "$CURRENT_DOTFILES_COMMIT" > "$LAST_PROCESSED_COMMIT_FILE"
         echo "$CURRENT_DOTFILES_COMMIT" > "$INSTALLATION_ID"
+        echo "Verificando que el commit se guardó correctamente:"
+        cat "$LAST_PROCESSED_COMMIT_FILE"
     fi
     echo "Contexto de build actualizado."
 else
