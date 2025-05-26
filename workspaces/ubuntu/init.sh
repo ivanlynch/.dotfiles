@@ -107,8 +107,17 @@ if [[ "$SHOULD_UPDATE" = true ]]; then
         echo "Guardando nuevo commit: $CURRENT_DOTFILES_COMMIT en $LAST_PROCESSED_COMMIT_FILE"
         echo "$CURRENT_DOTFILES_COMMIT" > "$LAST_PROCESSED_COMMIT_FILE"
         echo "$CURRENT_DOTFILES_COMMIT" > "$INSTALLATION_ID"
-        echo "Verificando que el commit se guardó correctamente:"
-        cat "$LAST_PROCESSED_COMMIT_FILE"
+        
+        # Verificar que el commit se guardó correctamente
+        if [[ -f "$LAST_PROCESSED_COMMIT_FILE" ]]; then
+            echo "Verificando que el commit se guardó correctamente:"
+            cat "$LAST_PROCESSED_COMMIT_FILE"
+            echo "Permisos del archivo:"
+            ls -l "$LAST_PROCESSED_COMMIT_FILE"
+        else
+            echo "ERROR: No se pudo guardar el archivo de commit"
+            exit 1
+        fi
     fi
     echo "Contexto de build actualizado."
 else
