@@ -1,188 +1,302 @@
 #!/bin/bash
 
-# Asegurarnos de estar en el directorio correcto (contexto de build de Docker)
-cd "$(dirname "$0")"
-
-echo "Preparando contexto de build para Docker..."
-
-# --- Lógica para preparar el directorio ./ansible y ./.config basada en commit de Git ---
-
-# Ruta a tu repositorio local de dotfiles (ajusta si es necesario)
+# --- Variables globales ---
 DISK_DIR="$HOME/workspaces/ubuntu/cache"
 CONTAINER_USER_HOME="/home/$USER"
 INSTALLATION_ID="$DISK_DIR/.installation_id"
 LAST_PROCESSED_COMMIT_FILE="$DISK_DIR/.last_processed_commit"
 TEMP_COMMIT_FILE="/tmp/.last_processed_commit"
+IMAGE_NAME="ubuntu-development-environment"
 
-echo "Directorio de caché: $DISK_DIR"
-echo "Archivo de commit anterior: $LAST_PROCESSED_COMMIT_FILE"
+# --- Funciones de utilidad ---
 
-# Verificar si el directorio de dotfiles existe y es un repo Git
-if [[ ! -d "$DISK_DIR" ]]; then
-    echo "Creando directorio de caché: $DISK_DIR"
-    mkdir -p "$DISK_DIR"
-    chmod 755 "$DISK_DIR"
-fi
+# Función para verificar si un comando existe
+command_exists() {
+    command -v "$1" &> /dev/null
+}
 
-# Verificar si el comando dotfiles está disponible
-if ! command -v dotfiles &> /dev/null; then
-    echo "El comando dotfiles no está disponible. Usando git directamente..."
-    # Intentar obtener el commit actual usando git directamente
-    if [[ -d "$HOME/.dotfiles" ]]; then
-        CURRENT_DOTFILES_COMMIT=$(git --git-dir="$HOME/.dotfiles" --work-tree="$HOME" log --format="%H" -n 1 2>/dev/null || echo "")
+# Función para verificar si un directorio existe
+directory_exists() {
+    [[ -d "$1" ]]
+}
+
+# Función para verificar si un archivo existe
+file_exists() {
+    [[ -f "$1" ]]
+}
+
+# --- Funciones principales ---
+
+# Función para obtener el commit actual de dotfiles
+get_current_commit() {
+    if ! command_exists dotfiles; then
+        echo "El comando dotfiles no está disponible. Usando git directamente..."
+        if directory_exists "$HOME/.dotfiles"; then
+            git --git-dir="$HOME/.dotfiles" --work-tree="$HOME" log --format="%H" -n 1 2>/dev/null || echo ""
+        else
+            echo ""
+        fi
     else
-        CURRENT_DOTFILES_COMMIT=""
+        dotfiles log --format="%H" -n 1 2>/dev/null || echo ""
     fi
-else
-    CURRENT_DOTFILES_COMMIT=$(dotfiles log --format="%H" -n 1 2>/dev/null || echo "")
-fi
+}
 
-PREVIOUS_DOTFILES_COMMIT=""
+# Función para obtener el commit anterior
+get_previous_commit() {
+    if file_exists "$LAST_PROCESSED_COMMIT_FILE"; then
+        cat "$LAST_PROCESSED_COMMIT_FILE"
+    else
+        echo ""
+    fi
+}
 
-if [[ -f "$LAST_PROCESSED_COMMIT_FILE" ]]; then
-    PREVIOUS_DOTFILES_COMMIT=$(cat "$LAST_PROCESSED_COMMIT_FILE")
-    echo "Leyendo commit anterior desde: $LAST_PROCESSED_COMMIT_FILE"
-fi
+# Función para preparar el directorio de caché
+prepare_cache_directory() {
+    if ! directory_exists "$DISK_DIR"; then
+        echo "Creando directorio de caché: $DISK_DIR"
+        mkdir -p "$DISK_DIR"
+        chmod 755 "$DISK_DIR"
+    fi
+}
 
-echo "Commit actual de dotfiles: $CURRENT_DOTFILES_COMMIT"
-echo "Commit previamente procesado: $PREVIOUS_DOTFILES_COMMIT"
+# Función para guardar el commit en un archivo temporal
+save_commit_to_temp() {
+    local commit="$1"
+    if [[ -n "$commit" ]]; then
+        echo "Guardando nuevo commit: $commit en $TEMP_COMMIT_FILE"
+        echo "$commit" > "$TEMP_COMMIT_FILE"
+        chmod 644 "$TEMP_COMMIT_FILE"
+        
+        if ! file_exists "$TEMP_COMMIT_FILE"; then
+            echo "ERROR: No se pudo guardar el archivo de commit temporal"
+            return 1
+        fi
+    fi
+}
 
-# Determinar si necesitamos actualizar
-SHOULD_UPDATE=false
+# Función para copiar el commit del archivo temporal al directorio de caché
+copy_commit_to_cache() {
+    if file_exists "$TEMP_COMMIT_FILE"; then
+        echo "Copiando archivo de commit temporal al directorio de caché..."
+        cp "$TEMP_COMMIT_FILE" "$LAST_PROCESSED_COMMIT_FILE"
+        cp "$TEMP_COMMIT_FILE" "$INSTALLATION_ID"
+        chmod 644 "$LAST_PROCESSED_COMMIT_FILE"
+        chmod 644 "$INSTALLATION_ID"
+        
+        if ! file_exists "$LAST_PROCESSED_COMMIT_FILE"; then
+            echo "ERROR: No se pudo copiar el archivo de commit al directorio de caché"
+            return 1
+        fi
+    fi
+}
 
-# Si no hay commit actual o previo, forzar la actualización
-if [[ -z "$CURRENT_DOTFILES_COMMIT" ]] || [[ -z "$PREVIOUS_DOTFILES_COMMIT" ]]; then
-    echo "No se encontró información de commits. Forzando actualización del contexto..."
-    rm -f "$LAST_PROCESSED_COMMIT_FILE"
-    rm -f "$INSTALLATION_ID"
-    CURRENT_DOTFILES_COMMIT=""
-    PREVIOUS_DOTFILES_COMMIT=""
-    SHOULD_UPDATE=true
-# Si hay un cambio en el commit, forzar la actualización
-elif [[ "$CURRENT_DOTFILES_COMMIT" != "$PREVIOUS_DOTFILES_COMMIT" ]]; then
-    echo "Cambio detectado en el repositorio de dotfiles. Forzando actualización del contexto..."
-    echo "Commit actual: $CURRENT_DOTFILES_COMMIT"
-    echo "Commit anterior: $PREVIOUS_DOTFILES_COMMIT"
-    SHOULD_UPDATE=true
-fi
-
-echo "Estado de actualización: SHOULD_UPDATE=$SHOULD_UPDATE"
-
-if [[ "$SHOULD_UPDATE" = true ]]; then
-    echo "Actualizando contexto de build..."
-
-    # --- Lógica para preparar el directorio ./ansible ---
+# Función para preparar el contexto de build
+prepare_build_context() {
     echo "Preparando ./ansible..."
-    if [[ -d ./ansible ]]; then
+    if directory_exists ./ansible; then
         echo "Eliminado directorio ansible"
         rm -rf ./ansible
     fi
 
-    if [[ -d "$HOME/ansible" ]]; then
+    if directory_exists "$HOME/ansible"; then
         echo "Copiando directorio ansible desde $HOME/ansible a ./ansible..."
         cp -rf "$HOME/ansible" .
     else
         echo "ERROR: No se encontró el directorio ansible en $HOME"
-        exit 1
+        return 1
     fi
 
-    # --- Lógica para preparar el directorio ./.config ---
     echo "Preparando ./config..."
-    if [[ -d ./.config ]]; then
+    if directory_exists ./.config; then
         echo "Eliminado directorio .config"
         rm -rf ./.config
     fi
 
     mkdir -p ./.config
 
-    if [[ -d "$HOME/.config/fish" ]]; then
+    if directory_exists "$HOME/.config/fish"; then
         echo "Copiando directorio fish desde $HOME/.config/fish a ./.config/fish..."
         cp -rf "$HOME/.config/fish" ./.config/fish
     fi
 
-    if [[ -d "$HOME/.config/nvim" ]]; then
+    if directory_exists "$HOME/.config/nvim"; then
         echo "Copiando directorio nvim desde $HOME/.config/nvim a ./.config/nvim..."
         cp -rf "$HOME/.config/nvim" ./.config/nvim
     fi
+}
 
-    if [[ -n "$CURRENT_DOTFILES_COMMIT" ]]; then
-        echo "Guardando nuevo commit: $CURRENT_DOTFILES_COMMIT en $TEMP_COMMIT_FILE"
-        echo "$CURRENT_DOTFILES_COMMIT" > "$TEMP_COMMIT_FILE"
-        chmod 644 "$TEMP_COMMIT_FILE"
-        
-        # Verificar que el commit se guardó correctamente
-        if [[ -f "$TEMP_COMMIT_FILE" ]]; then
-            echo "Verificando que el commit se guardó correctamente:"
-            cat "$TEMP_COMMIT_FILE"
-            echo "Permisos del archivo:"
-            ls -l "$TEMP_COMMIT_FILE"
-        else
-            echo "ERROR: No se pudo guardar el archivo de commit temporal"
-            exit 1
-        fi
+# Función para verificar los requisitos del build
+check_build_requirements() {
+    if ! file_exists ./Dockerfile; then
+        echo "ERROR: No se encontró el Dockerfile en el directorio actual"
+        return 1
     fi
-    echo "Contexto de build actualizado."
-else
-    echo "El repositorio de dotfiles no ha cambiado. Usando contexto de build existente."
-fi
 
-# Verificar si existe el Dockerfile
-if [[ ! -f ./Dockerfile ]]; then
-   echo "ERROR: No se encontró el Dockerfile en el directorio actual"
-   exit 1
-fi
+    if ! file_exists ./bootstrap.yml; then
+        echo "ERROR: No se encontró el archivo bootstrap.yml en el directorio actual"
+        echo "Verificando estructura del directorio:"
+        ls -la .
+        return 1
+    fi
 
-# Verificar si existe el playbook de ansible
-if [[ ! -f ./bootstrap.yml ]]; then
-   echo "ERROR: No se encontró el archivo bootstrap.yml en el directorio actual"
-   echo "Verificando estructura del directorio:"
-   ls -la .
-   exit 1
-fi
+    if ! directory_exists ./ansible/roles; then
+        echo "ERROR: No se encontró el directorio de roles de ansible"
+        echo "Verificando estructura del directorio ansible:"
+        ls -la ./ansible
+        return 1
+    fi
+}
 
-# Verificar si existen los roles de ansible
-if [[ ! -d ./ansible/roles ]]; then
-   echo "ERROR: No se encontró el directorio de roles de ansible"
-   echo "Verificando estructura del directorio ansible:"
-   ls -la ./ansible
-   exit 1
-fi
-
-IMAGE_NAME="ubuntu-development-environment"
-
-if [[ "$SHOULD_UPDATE" = true ]]; then
+# Función para construir la imagen Docker
+build_docker_image() {
     echo "Construyendo imagen Docker preconfigurada ($IMAGE_NAME)..."
     docker build . -f Dockerfile -t $IMAGE_NAME
 
     if [ $? -ne 0 ]; then
         echo "ERROR: El build de Docker falló. No se ejecutará el contenedor."
+        return 1
+    fi
+}
+
+# Función para ejecutar el contenedor Docker
+run_docker_container() {
+    echo "Ejecutando contenedor Docker preconfigurado con home persistente..."
+    docker run --rm -it \
+        -v "${DISK_DIR}:${CONTAINER_USER_HOME}/cache" \
+        -e USER="$USER" \
+        -e HOME=${CONTAINER_USER_HOME} \
+        -u $USER \
+        $IMAGE_NAME
+}
+
+# --- Tests ---
+
+# Función para ejecutar tests
+run_tests() {
+    echo "Ejecutando tests..."
+    
+    # Test de command_exists
+    if ! command_exists ls; then
+        echo "ERROR: Test de command_exists falló"
+        return 1
+    fi
+    
+    # Test de directory_exists
+    if ! directory_exists "$HOME"; then
+        echo "ERROR: Test de directory_exists falló"
+        return 1
+    fi
+    
+    # Test de file_exists
+    if ! file_exists "$HOME/.bashrc"; then
+        echo "ERROR: Test de file_exists falló"
+        return 1
+    fi
+    
+    # Test de prepare_cache_directory
+    prepare_cache_directory
+    if ! directory_exists "$DISK_DIR"; then
+        echo "ERROR: Test de prepare_cache_directory falló"
+        return 1
+    fi
+    
+    # Test de save_commit_to_temp
+    if ! save_commit_to_temp "test_commit"; then
+        echo "ERROR: Test de save_commit_to_temp falló"
+        return 1
+    fi
+    
+    # Test de copy_commit_to_cache
+    if ! copy_commit_to_cache; then
+        echo "ERROR: Test de copy_commit_to_cache falló"
+        return 1
+    fi
+    
+    echo "Todos los tests pasaron correctamente"
+}
+
+# --- Función principal ---
+
+main() {
+    # Asegurarnos de estar en el directorio correcto
+    cd "$(dirname "$0")"
+    
+    echo "Preparando contexto de build para Docker..."
+    
+    # Preparar el directorio de caché
+    prepare_cache_directory
+    
+    # Obtener commits
+    CURRENT_DOTFILES_COMMIT=$(get_current_commit)
+    PREVIOUS_DOTFILES_COMMIT=$(get_previous_commit)
+    
+    echo "Commit actual de dotfiles: $CURRENT_DOTFILES_COMMIT"
+    echo "Commit previamente procesado: $PREVIOUS_DOTFILES_COMMIT"
+    
+    # Determinar si necesitamos actualizar
+    SHOULD_UPDATE=false
+    
+    if [[ -z "$CURRENT_DOTFILES_COMMIT" ]] || [[ -z "$PREVIOUS_DOTFILES_COMMIT" ]]; then
+        echo "No se encontró información de commits. Forzando actualización del contexto..."
+        rm -f "$LAST_PROCESSED_COMMIT_FILE"
+        rm -f "$INSTALLATION_ID"
+        CURRENT_DOTFILES_COMMIT=""
+        PREVIOUS_DOTFILES_COMMIT=""
+        SHOULD_UPDATE=true
+    elif [[ "$CURRENT_DOTFILES_COMMIT" != "$PREVIOUS_DOTFILES_COMMIT" ]]; then
+        echo "Cambio detectado en el repositorio de dotfiles. Forzando actualización del contexto..."
+        echo "Commit actual: $CURRENT_DOTFILES_COMMIT"
+        echo "Commit anterior: $PREVIOUS_DOTFILES_COMMIT"
+        SHOULD_UPDATE=true
+    fi
+    
+    echo "Estado de actualización: SHOULD_UPDATE=$SHOULD_UPDATE"
+    
+    if [[ "$SHOULD_UPDATE" = true ]]; then
+        # Preparar el contexto de build
+        if ! prepare_build_context; then
+            echo "ERROR: Falló la preparación del contexto de build"
+            exit 1
+        fi
+        
+        # Guardar el commit en un archivo temporal
+        if ! save_commit_to_temp "$CURRENT_DOTFILES_COMMIT"; then
+            echo "ERROR: Falló el guardado del commit"
+            exit 1
+        fi
+    fi
+    
+    # Verificar los requisitos del build
+    if ! check_build_requirements; then
+        echo "ERROR: No se cumplen los requisitos del build"
         exit 1
     fi
-else
-    echo "Usando imagen Docker existente ($IMAGE_NAME)..."
-fi
-
-# Asegurarnos de que el directorio de caché existe y tiene los permisos correctos
-mkdir -p "$DISK_DIR"
-chmod 755 "$DISK_DIR"
-
-# Copiar el archivo de commit temporal al directorio de caché
-if [[ -f "$TEMP_COMMIT_FILE" ]]; then
-    echo "Copiando archivo de commit temporal al directorio de caché..."
-    cp "$TEMP_COMMIT_FILE" "$LAST_PROCESSED_COMMIT_FILE"
-    cp "$TEMP_COMMIT_FILE" "$INSTALLATION_ID"
-    chmod 644 "$LAST_PROCESSED_COMMIT_FILE"
-    chmod 644 "$INSTALLATION_ID"
     
-    # Verificar que los archivos se copiaron correctamente
-    echo "Verificando archivos de caché antes de ejecutar el contenedor:"
-    ls -la "$DISK_DIR"
-fi
+    if [[ "$SHOULD_UPDATE" = true ]]; then
+        # Construir la imagen Docker
+        if ! build_docker_image; then
+            echo "ERROR: Falló la construcción de la imagen Docker"
+            exit 1
+        fi
+    else
+        echo "Usando imagen Docker existente ($IMAGE_NAME)..."
+    fi
+    
+    # Copiar el commit del archivo temporal al directorio de caché
+    if ! copy_commit_to_cache; then
+        echo "ERROR: Falló la copia del commit al directorio de caché"
+        exit 1
+    fi
+    
+    # Ejecutar el contenedor Docker
+    run_docker_container
+}
 
-echo "Ejecutando contenedor Docker preconfigurado con home persistente..."
-docker run --rm -it \
-    -v "${DISK_DIR}:${CONTAINER_USER_HOME}/cache" \
-    -e USER="$USER" \
-    -e HOME=${CONTAINER_USER_HOME} \
-    -u $USER \
-    $IMAGE_NAME
+# --- Ejecución ---
+
+# Si se pasa el argumento --test, ejecutar los tests
+if [[ "$1" == "--test" ]]; then
+    run_tests
+else
+    main
+fi
