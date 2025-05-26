@@ -51,6 +51,15 @@ get_previous_commit() {
     fi
 }
 
+# Función para preparar el directorio de caché
+prepare_cache_directory() {
+    if ! directory_exists "$DISK_DIR"; then
+        echo "Creando directorio de caché: $DISK_DIR"
+        mkdir -p "$DISK_DIR"
+        chmod 755 "$DISK_DIR"
+    fi
+}
+
 # Función para guardar el commit en un archivo temporal
 save_commit_to_temp() {
     local commit="$1"
@@ -92,6 +101,13 @@ copy_commit_to_cache() {
     
     echo "Copiando archivo de commit temporal al directorio de caché..." >&2
     
+    # Asegurarnos de que el directorio de caché existe y tiene los permisos correctos
+    if ! directory_exists "$DISK_DIR"; then
+        echo "Creando directorio de caché: $DISK_DIR"
+        mkdir -p "$DISK_DIR"
+        chmod 755 "$DISK_DIR"
+    fi
+    
     # Copiar el archivo con redirección directa
     local commit
     commit=$(cat "$TEMP_COMMIT_FILE")
@@ -99,9 +115,9 @@ copy_commit_to_cache() {
     
     chmod 644 "$LAST_PROCESSED_COMMIT_FILE"
     
-    # Verificar que los archivos se copiaron correctamente
+    # Verificar que el archivo se copió correctamente
     if [[ ! -f "$LAST_PROCESSED_COMMIT_FILE" ]]; then
-        echo "ERROR: No se pudieron copiar los archivos al directorio de caché" >&2
+        echo "ERROR: No se pudo copiar el archivo al directorio de caché" >&2
         return 1
     fi
     
@@ -114,7 +130,7 @@ copy_commit_to_cache() {
         return 1
     fi
     
-    echo "Archivos copiados correctamente al directorio de caché" >&2
+    echo "Archivo copiado correctamente al directorio de caché" >&2
     return 0
 }
 
@@ -188,9 +204,10 @@ build_docker_image() {
 
 # Función para ejecutar el contenedor Docker
 run_docker_container() {
-    echo "Ejecutando contenedor Docker preconfigurado con home persistente..."
+
+    echo "Ejecutando contenedor Docker preconfigurado con home persistente..." >&2
     docker run --rm -it \
-        -v "${DISK_DIR}:${CONTAINER_USER_HOME}/cache" \
+        -v "${DISK_DIR}:${CONTAINER_USER_HOME}" \
         -e USER="$USER" \
         -e HOME=${CONTAINER_USER_HOME} \
         -u $USER \
@@ -220,7 +237,13 @@ run_tests() {
         echo "ERROR: Test de file_exists falló"
         return 1
     fi
-
+    
+    # Test de prepare_cache_directory
+    prepare_cache_directory
+    if ! directory_exists "$DISK_DIR"; then
+        echo "ERROR: Test de prepare_cache_directory falló"
+        return 1
+    fi
     
     # Test de save_commit_to_temp
     if ! save_commit_to_temp "test_commit"; then
@@ -241,20 +264,23 @@ run_tests() {
 
 main() {
     # Asegurarnos de estar en el directorio correcto
-    cd "$(dirname "$0")"
-    
-    echo "Preparando contexto de build para Docker..."
-    
+cd "$(dirname "$0")"
+
+echo "Preparando contexto de build para Docker..."
+
     # Preparar el directorio de caché
     prepare_cache_directory
+    
+    # Preparar directorios persistentes
+    prepare_persistent_directories
     
     # Obtener commits
     CURRENT_DOTFILES_COMMIT=$(get_current_commit)
     PREVIOUS_DOTFILES_COMMIT=$(get_previous_commit)
-    
+
     echo "Commit actual de dotfiles: $CURRENT_DOTFILES_COMMIT"
     echo "Commit previamente procesado: $PREVIOUS_DOTFILES_COMMIT"
-    
+
     # Determinar si necesitamos actualizar
     SHOULD_UPDATE=false
     
@@ -308,18 +334,18 @@ main() {
         # Verificar que el archivo temporal se creó correctamente
         if ! file_exists "$TEMP_COMMIT_FILE"; then
             echo "ERROR: No se pudo crear el archivo temporal"
-            exit 1
-        fi
-        
+   exit 1
+fi
+
         echo "Contenido del archivo temporal:"
         cat "$TEMP_COMMIT_FILE"
         
         # Copiar el commit del archivo temporal al directorio de caché
         if ! copy_commit_to_cache; then
             echo "ERROR: Falló la copia del commit al directorio de caché"
-            exit 1
-        fi
-        
+    exit 1
+fi
+
         # Verificar que los archivos se copiaron correctamente
         echo "Verificando archivos de caché antes de ejecutar el contenedor:"
         ls -la "$DISK_DIR"
