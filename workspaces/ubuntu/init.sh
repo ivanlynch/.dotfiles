@@ -47,7 +47,7 @@ if [[ -d "$CACHE_PATH" ]]; then
 	mkdir ./.config
 
 
-        if [[ -d ~/.config/fish ]]; the
+        if [[ -d ~/.config/fish ]]; then
             echo "Copiando directorio fish desde ~/.config/fish a ./.config/fish..."
             cp -rf ~/.config/fish ./.config/fish
         fi
