@@ -56,12 +56,13 @@ if [[ ! -f ./Dockerfile ]]; then
    exit 1
 fi
 
-IMAGE_NAME="ubuntu-development-environment" # Nuevo nombre para la imagen preconfigurada
+IMAGE_NAME="ubuntu-development-environment" # O como la hayas llamado
+# Ruta en tu máquina anfitriona macOS
+DISK_DIR="/Users/ivanlynch/workspaces/ubuntu/disk" # Ajusta a tu nombre de usuario y ruta
+# Ruta DENTRO del contenedor
+CONTAINER_USER_HOME="/home/ivanlynch" # Debe coincidir con USER_HOME en el Dockerfile
 
-echo "Construyendo imagen Docker preconfigurada ($IMAGE_NAME)..."
-# El build ahora incluye la ejecución de Ansible
-docker build . -f Dockerfile -t $IMAGE_NAME
-
-echo "Ejecutando contenedor Docker preconfigurado..."
-# Ya no se ejecuta Ansible aquí, solo se inicia el shell por defecto (fish)
-docker run --rm -it $IMAGE_NAME
+echo "Ejecutando contenedor Docker preconfigurado con home persistente..."
+docker run --rm -it \
+    -v "${DISK_DIR}:${CONTAINER_USER_HOME}" \
+    $IMAGE_NAME
