@@ -40,6 +40,9 @@ fi
 echo "Commit actual de dotfiles: $CURRENT_DOTFILES_COMMIT"
 echo "Commit previamente procesado: $PREVIOUS_DOTFILES_COMMIT"
 
+# Determinar si necesitamos actualizar
+SHOULD_UPDATE=false
+
 # Si no hay commit actual o previo, forzar la actualización
 if [[ -z "$CURRENT_DOTFILES_COMMIT" ]] || [[ -z "$PREVIOUS_DOTFILES_COMMIT" ]]; then
     echo "No se encontró información de commits. Forzando actualización del contexto..."
@@ -48,16 +51,15 @@ if [[ -z "$CURRENT_DOTFILES_COMMIT" ]] || [[ -z "$PREVIOUS_DOTFILES_COMMIT" ]]; 
     CURRENT_DOTFILES_COMMIT=""
     PREVIOUS_DOTFILES_COMMIT=""
     SHOULD_UPDATE=true
-else
-    SHOULD_UPDATE=false
-fi
-
-if [[ "$CURRENT_DOTFILES_COMMIT" != "$PREVIOUS_DOTFILES_COMMIT" ]]; then
-    echo "Cambio detectado en el repositorio de dotfiles. Actualizando contexto de build..."
+# Si hay un cambio en el commit, forzar la actualización
+elif [[ "$CURRENT_DOTFILES_COMMIT" != "$PREVIOUS_DOTFILES_COMMIT" ]]; then
+    echo "Cambio detectado en el repositorio de dotfiles. Forzando actualización del contexto..."
     SHOULD_UPDATE=true
 fi
 
 if [[ "$SHOULD_UPDATE" = true ]]; then
+    echo "Actualizando contexto de build..."
+
     # --- Lógica para preparar el directorio ./ansible ---
     echo "Preparando ./ansible..."
     if [[ -d ./ansible ]]; then
