@@ -1,15 +1,33 @@
 # ~/.config/fish/config.fish
 # (Copiado por Ansible desde la máquina controladora)
+
 # ------------------------------------------------------------
-# Configuración general de entorno y PATH (siempre disponible)
+# Configuración del PATH de Homebrew (MUY IMPORTANTE: DEBE IR PRIMERO)
+# ------------------------------------------------------------
+if test (uname) = "Darwin"
+    if test -d /opt/homebrew # macOS ARM
+        fish_add_path -mP /opt/homebrew/bin /opt/homebrew/sbin
+    else if test -d /usr/local/Homebrew # macOS Intel (ruta más antigua)
+         fish_add_path -mP /usr/local/Homebrew/bin /usr/local/Homebrew/sbin
+    else if test -d /usr/local/bin # macOS Intel (ruta común donde Homebrew instala symlinks)
+         fish_add_path -mP /usr/local/bin /usr/local/sbin
+    end
+else if test -d /home/linuxbrew/.linuxbrew # Linuxbrew
+    fish_add_path -mP /home/linuxbrew/.linuxbrew/bin /home/linuxbrew/.linuxbrew/sbin
+end
+
+# ------------------------------------------------------------
+# Configuración general de entorno y PATH (después de Homebrew)
 # ------------------------------------------------------------
 # NOTA: La configuración de PATH para $HOME/.local/bin ahora se maneja
 # a través de un archivo en ~/.config/fish/conf.d/ para asegurar
-# que se cargue temprano y correctamente.
+# que se cargue temprano y correctamente (asegúrate que esto no entre en conflicto
+# con el orden si pones $HOME/.local/bin aquí también).
+# Si $HOME/.local/bin está en conf.d, se cargará incluso antes que este archivo.
 
 # Java (Ejemplo, ajusta según tu método de instalación: asdf, sdkman, manual)
 if test (uname) = "Darwin"
-    if test -d /opt/homebrew/opt/openjdk@11/bin
+    if test -d /opt/homebrew/opt/openjdk@11/bin # Ejemplo: Java de Homebrew
         fish_add_path -mP /opt/homebrew/opt/openjdk@11/bin
     end
 end
@@ -31,15 +49,43 @@ set -q PYENV_ROOT; or set -gx PYENV_ROOT $HOME/.pyenv
 if test -d "$PYENV_ROOT"
     fish_add_path -mP $PYENV_ROOT/bin
     if type -q pyenv
-        # pyenv init --path | source # Para solo el path
         pyenv init - | source   # Para shims y autocompletado
     end
 end
 
-# asdf (Gestor de versiones, si lo usas)
-if test -f "$HOME/.asdf/asdf.fish"
-    source "$HOME/.asdf/asdf.fish"
+# asdf (Gestor de versiones)
+# Esta sección DEBE ir DESPUÉS de la configuración del PATH de Homebrew.
+
+# 1. Asegurar que el directorio 'bin' de asdf (instalación manual) esté en PATH.
+if test -d "$HOME/.asdf/bin"
+    fish_add_path -P "$HOME/.asdf/bin"
 end
+# Nota: Si asdf fue instalado por Homebrew, su 'bin' (symlink)
+# es usualmente /opt/homebrew/bin/asdf, que ya debería estar en PATH
+# gracias a la sección de Homebrew PATH de arriba.
+
+# 2. Cargar el script asdf.fish.
+set -l asdf_init_script_path "" # Declarar e inicializar
+
+if test -f "$HOME/.asdf/asdf.fish" # Priorizar instalación manual/directa de asdf
+    set asdf_init_script_path "$HOME/.asdf/asdf.fish"
+else if type -q brew # Si no se encontró asdf.fish manual Y el comando 'brew' existe
+    # Intentar encontrar asdf.fish si asdf fue instalado vía Homebrew
+    set -l brew_asdf_opt_dir (brew --prefix asdf 2>/dev/null)
+    if test -n "$brew_asdf_opt_dir"; and test -f "$brew_asdf_opt_dir/libexec/asdf.fish"
+        set asdf_init_script_path "$brew_asdf_opt_dir/libexec/asdf.fish"
+    end
+    set -e brew_asdf_opt_dir # Limpiar variable temporal
+end # Fin de la comprobación 'type -q brew'
+
+# Cargar el script asdf.fish si se encontró una ruta válida
+if test -n "$asdf_init_script_path"
+    source "$asdf_init_script_path"
+else
+    # Opcional: Descomentar para mostrar una advertencia si asdf.fish no se encuentra.
+    # echo "Advertencia: No se pudo encontrar asdf.fish. asdf no se inicializará completamente." >&2
+end
+set -e asdf_init_script_path # Limpiar variable temporal
 
 # Puppeteer (ejemplo, si lo usas)
 if type -q chromium
@@ -48,19 +94,6 @@ else if type -q chromium-browser
     set -q PUPPETEER_EXECUTABLE_PATH; or set -gx PUPPETEER_EXECUTABLE_PATH (command -v chromium-browser)
 end
 set -q PUPPETEER_SKIP_CHROMIUM_DOWNLOAD; or set -gx PUPPETEER_SKIP_CHROMIUM_DOWNLOAD true
-
-# Homebrew PATH (si aplica)
-if test (uname) = "Darwin"
-    if test -d /opt/homebrew # macOS ARM
-        fish_add_path -mP /opt/homebrew/bin /opt/homebrew/sbin
-    else if test -d /usr/local/Homebrew # macOS Intel (ruta más antigua)
-         fish_add_path -mP /usr/local/Homebrew/bin /usr/local/Homebrew/sbin
-    else if test -d /usr/local/bin # macOS Intel (ruta común)
-         fish_add_path -mP /usr/local/bin /usr/local/sbin
-    end
-else if test -d /home/linuxbrew/.linuxbrew # Linuxbrew
-    fish_add_path -mP /home/linuxbrew/.linuxbrew/bin /home/linuxbrew/.linuxbrew/sbin
-end
 
 # Windsurf (Solo si estás en macOS y tienes esta app)
 if test (uname) = "Darwin"
@@ -86,7 +119,7 @@ if status is-interactive
 
     # Aliases generales
     alias reload="source ~/.config/fish/config.fish"
-    alias edit="command nvim ~/.config/fish/config.fish" # Usar 'command nvim' para evitar alias de nvim
+    alias edit="command nvim ~/.config/fish/config.fish"
     alias config="cd ~/.config/nvim && command nvim ."
     alias dotfiles="command git --git-dir=$HOME/.dotfiles --work-tree=$HOME"
     alias ws="cd ~/workspaces"
@@ -113,7 +146,7 @@ if status is-interactive
     end
 
     # Alias adicionales útiles
-    alias l="command ls -la" # Usar 'command ls' para el ls del sistema si 'ls' está aliasado a eza
+    alias l="command ls -la"
 
     # 'ls' con 'eza' (si está instalado)
     if type -q eza
@@ -122,10 +155,10 @@ if status is-interactive
     
     # 'cat' con 'bat' (si bat está instalado)
     if type -q bat
-        if test (uname) = "Darwin" # Para macOS, intenta detectar tema claro/oscuro
+        if test (uname) = "Darwin"
             alias cat="bat --theme=(command defaults read -globalDomain AppleInterfaceStyle &> /dev/null && echo default || echo GitHub)"
-        else # Para Linux (contenedor Docker) u otros, usa un tema fijo
-            alias cat="bat --theme='GitHub'" # Puedes cambiar 'GitHub' por tu tema preferido
+        else
+            alias cat="bat --theme='GitHub'"
         end
     end
 
