@@ -258,12 +258,6 @@ main() {
             echo "ERROR: Falló la preparación del contexto de build"
             exit 1
         fi
-        
-        # Guardar el commit en un archivo temporal
-        if ! save_commit_to_temp "$CURRENT_DOTFILES_COMMIT"; then
-            echo "ERROR: Falló el guardado del commit"
-            exit 1
-        fi
     fi
     
     # Verificar los requisitos del build
@@ -282,11 +276,33 @@ main() {
         echo "Usando imagen Docker existente ($IMAGE_NAME)..."
     fi
     
+    # Guardar el commit actual en el archivo temporal
+    if [[ -n "$CURRENT_DOTFILES_COMMIT" ]]; then
+        echo "Guardando commit actual en archivo temporal..."
+        if ! save_commit_to_temp "$CURRENT_DOTFILES_COMMIT"; then
+            echo "ERROR: Falló el guardado del commit en archivo temporal"
+            exit 1
+        fi
+        
+        # Verificar que el archivo temporal se creó correctamente
+        if ! file_exists "$TEMP_COMMIT_FILE"; then
+            echo "ERROR: No se pudo crear el archivo temporal"
+            exit 1
+        fi
+        
+        echo "Contenido del archivo temporal:"
+        cat "$TEMP_COMMIT_FILE"
+    fi
+    
     # Copiar el commit del archivo temporal al directorio de caché
     if ! copy_commit_to_cache; then
         echo "ERROR: Falló la copia del commit al directorio de caché"
         exit 1
     fi
+    
+    # Verificar que los archivos se copiaron correctamente
+    echo "Verificando archivos de caché antes de ejecutar el contenedor:"
+    ls -la "$DISK_DIR"
     
     # Ejecutar el contenedor Docker
     run_docker_container
