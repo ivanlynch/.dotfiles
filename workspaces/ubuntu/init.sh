@@ -250,6 +250,14 @@ prepare_persistent_directories() {
         touch "$config_fish"
         chmod 644 "$config_fish"
     fi
+
+    # Crear directorio para variables universales de fish
+    local fish_data_dir="$DISK_DIR/.local/share/fish"
+    if ! directory_exists "$fish_data_dir"; then
+        echo "Creando directorio para variables universales de fish: $fish_data_dir" >&2
+        mkdir -p "$fish_data_dir"
+        chmod 755 "$fish_data_dir"
+    fi
 }
 
 # Función para ejecutar el contenedor Docker
@@ -263,6 +271,7 @@ run_docker_container() {
         -v "${DISK_DIR}/dev:${CONTAINER_USER_HOME}/dev" \
         -v "${DISK_DIR}/.ssh:${CONTAINER_USER_HOME}/.ssh" \
         -v "${DISK_DIR}/.config:${CONTAINER_USER_HOME}/.config" \
+        -v "${DISK_DIR}/.local:${CONTAINER_USER_HOME}/.local" \
         -e USER="$USER" \
         -e HOME=${CONTAINER_USER_HOME} \
         -e XDG_CONFIG_HOME="${CONTAINER_USER_HOME}/.config" \
