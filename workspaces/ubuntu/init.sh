@@ -275,11 +275,7 @@ run_docker_container() {
 
     echo "Ejecutando contenedor Docker preconfigurado con home persistente..." >&2
     docker run --rm -it \
-        -v "${DISK_DIR}:${CONTAINER_USER_HOME}/cache" \
-        -v "${DISK_DIR}/dev:${CONTAINER_USER_HOME}/dev" \
-        -v "${DISK_DIR}/.ssh:${CONTAINER_USER_HOME}/.ssh" \
-        -v "${DISK_DIR}/.config:${CONTAINER_USER_HOME}/.config" \
-        -v "${DISK_DIR}/.local:${CONTAINER_USER_HOME}/.local" \
+        -v "${DISK_DIR}:${CONTAINER_USER_HOME}" \
         -e USER="$USER" \
         -e HOME=${CONTAINER_USER_HOME} \
         -e XDG_CONFIG_HOME="${CONTAINER_USER_HOME}/.config" \
