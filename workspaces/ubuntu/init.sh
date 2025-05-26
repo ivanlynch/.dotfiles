@@ -30,7 +30,8 @@ file_exists() {
 # Función para obtener el commit actual de dotfiles
 get_current_commit() {
     if ! command_exists dotfiles; then
-        echo "El comando dotfiles no está disponible. Usando git directamente..."
+        echo "El comando dotfiles no está disponible. Usando git directamente..." >&2
+        # Intentar obtener el commit actual usando git directamente
         if directory_exists "$HOME/.dotfiles"; then
             git --git-dir="$HOME/.dotfiles" --work-tree="$HOME" log --format="%H" -n 1 2>/dev/null || echo ""
         else
@@ -44,7 +45,7 @@ get_current_commit() {
 # Función para obtener el commit anterior
 get_previous_commit() {
     if file_exists "$LAST_PROCESSED_COMMIT_FILE"; then
-        echo "Leyendo commit anterior desde: $LAST_PROCESSED_COMMIT_FILE"
+        echo "Leyendo commit anterior desde: $LAST_PROCESSED_COMMIT_FILE" >&2
         cat "$LAST_PROCESSED_COMMIT_FILE"
     else
         echo ""
@@ -64,7 +65,7 @@ prepare_cache_directory() {
 save_commit_to_temp() {
     local commit="$1"
     if [[ -n "$commit" ]]; then
-        echo "Guardando nuevo commit: $commit en $TEMP_COMMIT_FILE"
+        echo "Guardando nuevo commit: $commit en $TEMP_COMMIT_FILE" >&2
         # Asegurarnos de que el directorio temporal existe
         mkdir -p "$(dirname "$TEMP_COMMIT_FILE")"
         # Guardar el commit con redirección directa
@@ -73,20 +74,20 @@ save_commit_to_temp() {
         
         # Verificar que el archivo se creó y tiene el contenido correcto
         if [[ ! -f "$TEMP_COMMIT_FILE" ]]; then
-            echo "ERROR: No se pudo crear el archivo temporal"
+            echo "ERROR: No se pudo crear el archivo temporal" >&2
             return 1
         fi
         
         local saved_commit
         saved_commit=$(cat "$TEMP_COMMIT_FILE")
         if [[ "$saved_commit" != "$commit" ]]; then
-            echo "ERROR: El commit guardado no coincide con el original"
-            echo "Original: $commit"
-            echo "Guardado: $saved_commit"
+            echo "ERROR: El commit guardado no coincide con el original" >&2
+            echo "Original: $commit" >&2
+            echo "Guardado: $saved_commit" >&2
             return 1
         fi
         
-        echo "Commit guardado correctamente en archivo temporal"
+        echo "Commit guardado correctamente en archivo temporal" >&2
         return 0
     fi
     return 1
@@ -95,11 +96,11 @@ save_commit_to_temp() {
 # Función para copiar el commit del archivo temporal al directorio de caché
 copy_commit_to_cache() {
     if [[ ! -f "$TEMP_COMMIT_FILE" ]]; then
-        echo "ERROR: No existe el archivo temporal de commit"
+        echo "ERROR: No existe el archivo temporal de commit" >&2
         return 1
     fi
     
-    echo "Copiando archivo de commit temporal al directorio de caché..."
+    echo "Copiando archivo de commit temporal al directorio de caché..." >&2
     
     # Asegurarnos de que el directorio de caché existe y tiene los permisos correctos
     mkdir -p "$DISK_DIR"
@@ -116,20 +117,20 @@ copy_commit_to_cache() {
     
     # Verificar que los archivos se copiaron correctamente
     if [[ ! -f "$LAST_PROCESSED_COMMIT_FILE" ]] || [[ ! -f "$INSTALLATION_ID" ]]; then
-        echo "ERROR: No se pudieron copiar los archivos al directorio de caché"
+        echo "ERROR: No se pudieron copiar los archivos al directorio de caché" >&2
         return 1
     fi
     
     local saved_commit
     saved_commit=$(cat "$LAST_PROCESSED_COMMIT_FILE")
     if [[ "$saved_commit" != "$commit" ]]; then
-        echo "ERROR: El commit guardado en caché no coincide con el original"
-        echo "Original: $commit"
-        echo "Guardado: $saved_commit"
+        echo "ERROR: El commit guardado en caché no coincide con el original" >&2
+        echo "Original: $commit" >&2
+        echo "Guardado: $saved_commit" >&2
         return 1
     fi
     
-    echo "Archivos copiados correctamente al directorio de caché"
+    echo "Archivos copiados correctamente al directorio de caché" >&2
     return 0
 }
 
