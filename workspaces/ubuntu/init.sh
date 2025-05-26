@@ -169,11 +169,6 @@ fi
 mkdir -p "$DISK_DIR"
 chmod 755 "$DISK_DIR"
 
-# Crear un directorio temporal para el contenedor
-TEMP_HOME="$DISK_DIR/temp_home"
-mkdir -p "$TEMP_HOME"
-chmod 755 "$TEMP_HOME"
-
 # Asegurarnos de que los archivos de caché existen y tienen los permisos correctos
 if [[ -n "$CURRENT_DOTFILES_COMMIT" ]]; then
     echo "$CURRENT_DOTFILES_COMMIT" > "$LAST_PROCESSED_COMMIT_FILE"
@@ -185,7 +180,6 @@ fi
 echo "Ejecutando contenedor Docker preconfigurado con home persistente..."
 docker run --rm -it \
     -v "${DISK_DIR}:${CONTAINER_USER_HOME}/cache" \
-    -v "${TEMP_HOME}:${CONTAINER_USER_HOME}" \
     -e USER="$USER" \
     -e HOME=${CONTAINER_USER_HOME} \
     -u $USER \
