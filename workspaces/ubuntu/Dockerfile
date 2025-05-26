@@ -43,7 +43,7 @@ COPY . .
 # Copiar el .config COMPLETO del anfitrión (que está en /app/.config) al home del usuario
 # Y establecer los permisos correctos.
 RUN mkdir -p ${USER_HOME}/.config && chown $USER_NAME:$USER_NAME ${USER_HOME}/.config
-RUN cp -a /app/.config/. ${USER_HOME}/.config/
+RUN cp -a /app/.config ${USER_HOME}/.config
 RUN chown -R $USER_NAME:$USER_NAME ${USER_HOME}/.config
 
 # --- Paso 2: Ejecutar Ansible para instalar herramientas y configurar el shell ---

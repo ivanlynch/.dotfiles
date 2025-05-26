@@ -28,6 +28,7 @@ if [[ -d ./.config ]]; then
   echo "Eliminando directorio ./.config local existente..."
   rm -rf ./.config
 fi
+
 mkdir -p ./.config # Crear el directorio .config en el contexto de build
 
 if [[ -d ~/.config/nvim ]]; then
