@@ -53,4 +53,4 @@ RUN ansible-playbook -i localhost, -c local bootstrap.yml \
     -e "user_home=${USER_HOME}"
 
 USER $USER_NAME
-CMD ["/usr/bin/bash"]
+CMD ["/usr/bin/fish"]
