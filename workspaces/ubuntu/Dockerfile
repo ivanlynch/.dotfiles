@@ -37,10 +37,15 @@ RUN useradd -m -G sudo -s /bin/bash $USER_NAME \
     && chmod 0440 /etc/sudoers.d/$USER_NAME
 
 WORKDIR $USER_HOME
-COPY . .
 
-# --- Paso 1 de Configuración del Usuario ---
-RUN chown -R $USER_NAME:$USER_NAME ${USER_HOME}/.config
+# Copiar archivos de configuración
+COPY .config/fish $USER_HOME/.config/fish/
+COPY .config/nvim $USER_HOME/.config/nvim/
+COPY ansible $USER_HOME/ansible/
+COPY bootstrap.yml $USER_HOME/
+
+# Establecer permisos correctos
+RUN chown -R $USER_NAME:$USER_NAME $USER_HOME
 
 # --- Paso 2: Ejecutar Ansible para instalar herramientas y configurar el shell ---
 RUN ansible-playbook -i localhost, -c local bootstrap.yml \
