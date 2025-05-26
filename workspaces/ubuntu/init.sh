@@ -90,7 +90,7 @@ if [ $? -ne 0 ]; then
 fi
 
 # ... (resto de tu script para ejecutar el contenedor) ...
-DISK_DIR="/Users/ivanlynch/workspaces/ubuntu/disk"
+DISK_DIR="/home/ivanlynch/workspaces/ubuntu/disk"
 CONTAINER_USER_HOME="/home/ivanlynch"
 mkdir -p "${DISK_DIR}"
 echo "Ejecutando contenedor Docker preconfigurado con home persistente..."
