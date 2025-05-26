@@ -3,7 +3,6 @@
 # --- Variables globales ---
 DISK_DIR="$HOME/workspaces/ubuntu/cache"
 CONTAINER_USER_HOME="/home/$USER"
-INSTALLATION_ID="$DISK_DIR/.installation_id"
 LAST_PROCESSED_COMMIT_FILE="$(dirname "$0")/.last_dotfiles_commit"
 TEMP_COMMIT_FILE="/tmp/.last_processed_commit"
 IMAGE_NAME="ubuntu-development-environment"
@@ -52,15 +51,6 @@ get_previous_commit() {
     fi
 }
 
-# Función para preparar el directorio de caché
-prepare_cache_directory() {
-    if ! directory_exists "$DISK_DIR"; then
-        echo "Creando directorio de caché: $DISK_DIR"
-        mkdir -p "$DISK_DIR"
-        chmod 755 "$DISK_DIR"
-    fi
-}
-
 # Función para guardar el commit en un archivo temporal
 save_commit_to_temp() {
     local commit="$1"
@@ -102,21 +92,15 @@ copy_commit_to_cache() {
     
     echo "Copiando archivo de commit temporal al directorio de caché..." >&2
     
-    # Asegurarnos de que el directorio de caché existe y tiene los permisos correctos
-    mkdir -p "$DISK_DIR"
-    chmod 755 "$DISK_DIR"
-    
     # Copiar el archivo con redirección directa
     local commit
     commit=$(cat "$TEMP_COMMIT_FILE")
     printf "%s" "$commit" > "$LAST_PROCESSED_COMMIT_FILE"
-    printf "%s" "$commit" > "$INSTALLATION_ID"
     
     chmod 644 "$LAST_PROCESSED_COMMIT_FILE"
-    chmod 644 "$INSTALLATION_ID"
     
     # Verificar que los archivos se copiaron correctamente
-    if [[ ! -f "$LAST_PROCESSED_COMMIT_FILE" ]] || [[ ! -f "$INSTALLATION_ID" ]]; then
+    if [[ ! -f "$LAST_PROCESSED_COMMIT_FILE" ]]; then
         echo "ERROR: No se pudieron copiar los archivos al directorio de caché" >&2
         return 1
     fi
@@ -236,13 +220,7 @@ run_tests() {
         echo "ERROR: Test de file_exists falló"
         return 1
     fi
-    
-    # Test de prepare_cache_directory
-    prepare_cache_directory
-    if ! directory_exists "$DISK_DIR"; then
-        echo "ERROR: Test de prepare_cache_directory falló"
-        return 1
-    fi
+
     
     # Test de save_commit_to_temp
     if ! save_commit_to_temp "test_commit"; then
@@ -283,7 +261,6 @@ main() {
     if [[ -z "$CURRENT_DOTFILES_COMMIT" ]] || [[ -z "$PREVIOUS_DOTFILES_COMMIT" ]]; then
         echo "No se encontró información de commits. Forzando actualización del contexto..."
         rm -f "$LAST_PROCESSED_COMMIT_FILE"
-        rm -f "$INSTALLATION_ID"
         CURRENT_DOTFILES_COMMIT=""
         PREVIOUS_DOTFILES_COMMIT=""
         SHOULD_UPDATE=true
@@ -350,10 +327,6 @@ main() {
         if [[ -f "$LAST_PROCESSED_COMMIT_FILE" ]]; then
             echo "Último commit procesado:"
             cat "$LAST_PROCESSED_COMMIT_FILE"
-        fi
-        if [[ -f "$INSTALLATION_ID" ]]; then
-            echo "ID de instalación:"
-            cat "$INSTALLATION_ID"
         fi
     fi
     
