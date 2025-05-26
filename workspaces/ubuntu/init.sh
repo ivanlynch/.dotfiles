@@ -52,9 +52,12 @@ else
     SHOULD_UPDATE=false
 fi
 
-if [[ "$CURRENT_DOTFILES_COMMIT" != "$PREVIOUS_DOTFILES_COMMIT" ]] || [[ "$SHOULD_UPDATE" = true ]]; then
+if [[ "$CURRENT_DOTFILES_COMMIT" != "$PREVIOUS_DOTFILES_COMMIT" ]]; then
     echo "Cambio detectado en el repositorio de dotfiles. Actualizando contexto de build..."
+    SHOULD_UPDATE=true
+fi
 
+if [[ "$SHOULD_UPDATE" = true ]]; then
     # --- Lógica para preparar el directorio ./ansible ---
     echo "Preparando ./ansible..."
     if [[ -d ./ansible ]]; then
@@ -122,12 +125,16 @@ fi
 
 IMAGE_NAME="ubuntu-development-environment"
 
-echo "Construyendo imagen Docker preconfigurada ($IMAGE_NAME)..."
-docker build . -f Dockerfile -t $IMAGE_NAME
+if [[ "$SHOULD_UPDATE" = true ]]; then
+    echo "Construyendo imagen Docker preconfigurada ($IMAGE_NAME)..."
+    docker build . -f Dockerfile -t $IMAGE_NAME
 
-if [ $? -ne 0 ]; then
-    echo "ERROR: El build de Docker falló. No se ejecutará el contenedor."
-    exit 1
+    if [ $? -ne 0 ]; then
+        echo "ERROR: El build de Docker falló. No se ejecutará el contenedor."
+        exit 1
+    fi
+else
+    echo "Usando imagen Docker existente ($IMAGE_NAME)..."
 fi
 
 mkdir -p "${DISK_DIR}"
