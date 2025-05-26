@@ -165,10 +165,14 @@ else
     echo "Usando imagen Docker existente ($IMAGE_NAME)..."
 fi
 
-mkdir -p "${DISK_DIR}"
+# Crear un directorio temporal para el contenedor
+TEMP_HOME="$DISK_DIR/temp_home"
+mkdir -p "$TEMP_HOME"
+
 echo "Ejecutando contenedor Docker preconfigurado con home persistente..."
 docker run --rm -it \
-    -v "${DISK_DIR}:${CONTAINER_USER_HOME}" \
+    -v "${DISK_DIR}:${CONTAINER_USER_HOME}/cache" \
+    -v "${TEMP_HOME}:${CONTAINER_USER_HOME}" \
     -e USER="$USER" \
     -e HOME=${CONTAINER_USER_HOME} \
     -u $USER \
