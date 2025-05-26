@@ -165,9 +165,22 @@ else
     echo "Usando imagen Docker existente ($IMAGE_NAME)..."
 fi
 
+# Asegurarnos de que el directorio de caché existe y tiene los permisos correctos
+mkdir -p "$DISK_DIR"
+chmod 755 "$DISK_DIR"
+
 # Crear un directorio temporal para el contenedor
 TEMP_HOME="$DISK_DIR/temp_home"
 mkdir -p "$TEMP_HOME"
+chmod 755 "$TEMP_HOME"
+
+# Asegurarnos de que los archivos de caché existen y tienen los permisos correctos
+if [[ -n "$CURRENT_DOTFILES_COMMIT" ]]; then
+    echo "$CURRENT_DOTFILES_COMMIT" > "$LAST_PROCESSED_COMMIT_FILE"
+    echo "$CURRENT_DOTFILES_COMMIT" > "$INSTALLATION_ID"
+    chmod 644 "$LAST_PROCESSED_COMMIT_FILE"
+    chmod 644 "$INSTALLATION_ID"
+fi
 
 echo "Ejecutando contenedor Docker preconfigurado con home persistente..."
 docker run --rm -it \
