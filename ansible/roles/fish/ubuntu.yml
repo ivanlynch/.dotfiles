@@ -1,12 +1,12 @@
 ---
 # ansible/tasks/fish_ubuntu.yml
-# Asume que las variables user_name, user_home, y custom_fish_config_src
-# están definidas en el playbook que importa este archivo.
+# Asume que las variables user_name y user_home están definidas en el playbook
+# que importa este archivo (ej. bootstrap.yml).
 # Asume 'become: true' global o en cada tarea que lo necesite.
 
 - name: Fish | Añadir repositorio de Fish PPA (Ubuntu)
   ansible.builtin.apt_repository:
-    repo: ppa:fish-shell/release-4
+    repo: ppa:fish-shell/release-3 # PPA estable oficial para Fish 3.x
     state: present
     update_cache: yes
   when: ansible_distribution == "Ubuntu"
@@ -22,7 +22,7 @@
 - name: Fish | Asegurar que fish está en /etc/shells (Ubuntu)
   ansible.builtin.lineinfile:
     path: /etc/shells
-    line: /usr/bin/fish
+    line: /usr/bin/fish # Verificar con 'which fish' en el target si es diferente
     state: present
     create: yes
   when: ansible_distribution == "Ubuntu"
@@ -39,8 +39,8 @@
   ansible.builtin.file:
     path: "{{ user_home }}/.config/fish/{{ item }}"
     state: directory
-    owner: "{{ user_name }}"
-    group: "{{ user_name }}"
+    owner: "{{ user_name }}" # Asegurar propietario correcto
+    group: "{{ user_name }}" # Asegurar grupo correcto
     mode: "0755"
   loop:
     - "" # Para .config/fish
@@ -48,13 +48,14 @@
     - "completions"
     - "functions"
   when: ansible_distribution == "Ubuntu"
-  become: true
+  become: true # Necesario para owner/group si el directorio padre no es del usuario
 
 - name: Fish | Añadir ~/.local/bin al PATH de fish (vía conf.d) (Ubuntu)
   ansible.builtin.copy:
     dest: "{{ user_home }}/.config/fish/conf.d/00_local_bin_path.fish"
     content: |
       # Añadir ~/.local/bin al PATH de fish
+      # Se ejecuta para sesiones interactivas y de inicio de sesión
       if status is-interactive; or status is-login
         fish_add_path -mP $HOME/.local/bin
       end
@@ -62,7 +63,7 @@
     group: "{{ user_name }}"
     mode: "0644"
   when: ansible_distribution == "Ubuntu"
-  become: true
+  become: true # Necesario para owner/group
 
 - name: Fish | Instalar dependencias generales (curl, git, wget) (Ubuntu)
   ansible.builtin.apt:
@@ -70,12 +71,15 @@
       - curl
       - git
       - wget
+      # Considera añadir apt-utils aquí para evitar advertencias de debconf
+      - apt-utils
     state: present
   when: ansible_distribution == "Ubuntu"
   become: true
 
-# Ahora importar las tareas para otras herramientas que podrían modificar config.fish
-# o que dependen de la configuración base de fish.
+# Ahora importar las tareas para instalar otras herramientas.
+# Sus scripts de instalación (ej. fzf --all, zoxide init)
+# modificarán la configuración de fish que ya fue copiada por el Dockerfile.
 - name: Incluir tareas de Starship
   ansible.builtin.import_tasks: ../starship/main.yml
   when: ansible_distribution == "Ubuntu"

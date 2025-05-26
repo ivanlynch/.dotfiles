@@ -39,34 +39,29 @@ RUN useradd -m -G sudo -s /bin/bash $USER_NAME \
 WORKDIR /app
 COPY . .
 
-# Ejecutar Ansible playbook SOLO PARA INSTALAR DEPENDENCIAS Y CONFIGURAR SHELL
-# El playbook 'bootstrap.yml' y las tareas importadas
-# NO deberían intentar copiar o modificar config.fish ni conf.d directamente.
-# Solo deben instalar paquetes y asegurar que fish sea el shell por defecto.
+# --- Paso 1 de Configuración del Usuario (Hecho por Docker como root) ---
+# Copiar el .config COMPLETO del anfitrión (que está en /app/.config) al home del usuario
+# Y establecer los permisos correctos.
+RUN mkdir -p ${USER_HOME}/.config && chown $USER_NAME:$USER_NAME ${USER_HOME}/.config
+RUN cp -a /app/.config/. ${USER_HOME}/.config/
+RUN chown -R $USER_NAME:$USER_NAME ${USER_HOME}/.config
+
+# --- Paso 2: Ejecutar Ansible para instalar herramientas y configurar el shell ---
+# Ansible ahora opera sobre un ~/.config/fish/ ya poblado por el paso anterior.
+# El playbook de Ansible NO debería volver a copiar config.fish,
+# SÍ debería crear conf.d/00_local_bin_path.fish
+# SÍ debería ejecutar ~/.fzf/install --all (ahora que config.fish ya existe)
 RUN ansible-playbook -i localhost, -c local bootstrap.yml \
     -e "user_name=${USER_NAME}" \
     -e "user_home=${USER_HOME}"
-    # No pasar custom_fish_config_src si Ansible no va a copiar config.fish
 
-# --- COPIAR LA CONFIGURACIÓN DEL USUARIO DESDE EL HOST Y ARREGLAR PERMISOS ---
-# Asegurar que el directorio .config del usuario exista
-RUN mkdir -p ${USER_HOME}/.config && chown $USER_NAME:$USER_NAME ${USER_HOME}/.config
+# Debug final (opcional)
+RUN echo ">>> Permisos en ${USER_HOME}/.config/fish después de Ansible:" && ls -la "${USER_HOME}/.config/fish" || true
+RUN echo ">>> Contenido de ${USER_HOME}/.config/fish/conf.d/ después de Ansible:" && ls -la "${USER_HOME}/.config/fish/conf.d/" || true
+RUN echo ">>> Contenido de ${USER_HOME}/.config/fish/functions/ después de Ansible:" && ls -la "${USER_HOME}/.config/fish/functions/" || true
 
-# Copiar el .config (que vino del host y está en /app/.config) al home del usuario.
-# Esto se hace como root.
-RUN cp -a /app/.config/. ${USER_HOME}/.config/
-# cp -a (archive) preserva permisos, enlaces, etc., pero la propiedad será root
-# si la fuente es propiedad de root.
 
-# ¡CRUCIAL! Cambiar la propiedad de todo en ${USER_HOME}/.config al usuario.
-RUN chown -R $USER_NAME:$USER_NAME ${USER_HOME}/.config
-
-# Debug: Verificar permisos después de la copia y chown (ejecutado como root)
-RUN echo ">>> Permisos en ${USER_HOME}/.config después de COPY y CHOWN:" && ls -la "${USER_HOME}/.config" || true
-RUN echo ">>> Permisos en ${USER_HOME}/.config/fish después de COPY y CHOWN:" && ls -la "${USER_HOME}/.config/fish" || true
-
-# Cambiar al usuario no root
 USER $USER_NAME
 WORKDIR ${USER_HOME}
-
 CMD ["/usr/bin/fish"]
+an
