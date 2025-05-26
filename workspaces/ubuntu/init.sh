@@ -4,7 +4,7 @@
 DISK_DIR="$HOME/workspaces/ubuntu/cache"
 CONTAINER_USER_HOME="/home/$USER"
 INSTALLATION_ID="$DISK_DIR/.installation_id"
-LAST_PROCESSED_COMMIT_FILE="$DISK_DIR/.last_processed_commit"
+LAST_PROCESSED_COMMIT_FILE="$(dirname "$0")/.last_dotfiles_commit"
 TEMP_COMMIT_FILE="/tmp/.last_processed_commit"
 IMAGE_NAME="ubuntu-development-environment"
 
@@ -44,6 +44,7 @@ get_current_commit() {
 # Función para obtener el commit anterior
 get_previous_commit() {
     if file_exists "$LAST_PROCESSED_COMMIT_FILE"; then
+        echo "Leyendo commit anterior desde: $LAST_PROCESSED_COMMIT_FILE"
         cat "$LAST_PROCESSED_COMMIT_FILE"
     else
         echo ""
