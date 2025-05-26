@@ -1,21 +1,3 @@
-# DEBUG: Inicio de config.fish
-echo "DEBUG: Cargando config.fish"
-echo "DEBUG: PATH al inicio de config.fish es:"
-echo $PATH | tr ':' '\n'
-if type -q fzf
-    echo "DEBUG: fzf encontrado en el PATH:" (type -p fzf)
-else
-    echo "DEBUG: fzf NO encontrado en el PATH al inicio de config.fish"
-end
-echo "DEBUG: Contenido de ~/.config/fish/conf.d/:"
-ls -la ~/.config/fish/conf.d
-if test -f ~/.config/fish/conf.d/fzf.fish
-    echo "DEBUG: Contenido de ~/.config/fish/conf.d/fzf.fish:"
-    cat ~/.config/fish/conf.d/fzf.fish
-end
-# --- FIN DEBUG ---
-
-
 # ~/.config/fish/config.fish
 # (Copiado por Ansible desde la máquina controladora)
 # ------------------------------------------------------------

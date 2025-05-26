@@ -64,4 +64,3 @@ RUN echo ">>> Contenido de ${USER_HOME}/.config/fish/functions/ después de Ansi
 USER $USER_NAME
 WORKDIR ${USER_HOME}
 CMD ["/usr/bin/fish"]
-an
