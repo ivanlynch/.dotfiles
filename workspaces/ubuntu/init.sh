@@ -175,6 +175,10 @@ if [[ -n "$CURRENT_DOTFILES_COMMIT" ]]; then
     echo "$CURRENT_DOTFILES_COMMIT" > "$INSTALLATION_ID"
     chmod 644 "$LAST_PROCESSED_COMMIT_FILE"
     chmod 644 "$INSTALLATION_ID"
+    
+    # Verificar que los archivos se guardaron correctamente
+    echo "Verificando archivos de caché antes de ejecutar el contenedor:"
+    ls -la "$DISK_DIR"
 fi
 
 echo "Ejecutando contenedor Docker preconfigurado con home persistente..."
