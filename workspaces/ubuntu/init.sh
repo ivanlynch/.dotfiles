@@ -3,6 +3,7 @@
 # --- Variables globales ---
 DISK_DIR="$HOME/workspaces/ubuntu/cache"
 CONTAINER_USER_HOME="/home/$USER"
+INSTALLATION_ID="$DISK_DIR/.installation_id"
 LAST_PROCESSED_COMMIT_FILE="$(dirname "$0")/.last_dotfiles_commit"
 TEMP_COMMIT_FILE="/tmp/.last_processed_commit"
 IMAGE_NAME="ubuntu-development-environment"
@@ -109,12 +110,14 @@ copy_commit_to_cache() {
     local commit
     commit=$(cat "$TEMP_COMMIT_FILE")
     printf "%s" "$commit" > "$LAST_PROCESSED_COMMIT_FILE"
+    printf "%s" "$commit" > "$INSTALLATION_ID"
     
     chmod 644 "$LAST_PROCESSED_COMMIT_FILE"
+    chmod 644 "$INSTALLATION_ID"
     
-    # Verificar que el archivo se copió correctamente
-    if [[ ! -f "$LAST_PROCESSED_COMMIT_FILE" ]]; then
-        echo "ERROR: No se pudo copiar el archivo al directorio de caché" >&2
+    # Verificar que los archivos se copiaron correctamente
+    if [[ ! -f "$LAST_PROCESSED_COMMIT_FILE" ]] || [[ ! -f "$INSTALLATION_ID" ]]; then
+        echo "ERROR: No se pudieron copiar los archivos al directorio de caché" >&2
         return 1
     fi
     
@@ -127,7 +130,7 @@ copy_commit_to_cache() {
         return 1
     fi
     
-    echo "Archivo copiado correctamente al directorio de caché" >&2
+    echo "Archivos copiados correctamente al directorio de caché" >&2
     return 0
 }
 
@@ -199,91 +202,13 @@ build_docker_image() {
     fi
 }
 
-# Función para preparar directorios persistentes
-prepare_persistent_directories() {
-    # Directorio dev
-    local dev_dir="$DISK_DIR/dev"
-    if ! directory_exists "$dev_dir"; then
-        echo "Creando directorio dev: $dev_dir" >&2
-        mkdir -p "$dev_dir"
-        chmod 755 "$dev_dir"
-    fi
-
-    # Directorio .ssh
-    local ssh_dir="$DISK_DIR/.ssh"
-    if ! directory_exists "$ssh_dir"; then
-        echo "Creando directorio .ssh: $ssh_dir" >&2
-        mkdir -p "$ssh_dir"
-        chmod 700 "$ssh_dir"
-    fi
-
-    # Directorio .config
-    local config_dir="$DISK_DIR/.config"
-    if ! directory_exists "$config_dir"; then
-        echo "Creando directorio .config: $config_dir" >&2
-        mkdir -p "$config_dir"
-        chmod 755 "$config_dir"
-    fi
-
-    # Directorio .config/fish
-    local fish_config_dir="$config_dir/fish"
-    if ! directory_exists "$fish_config_dir"; then
-        echo "Creando directorio .config/fish: $fish_config_dir" >&2
-        mkdir -p "$fish_config_dir"
-        chmod 755 "$fish_config_dir"
-    fi
-
-    # Crear subdirectorios de fish si no existen
-    for dir in completions conf.d functions; do
-        local fish_subdir="$fish_config_dir/$dir"
-        if ! directory_exists "$fish_subdir"; then
-            echo "Creando directorio .config/fish/$dir: $fish_subdir" >&2
-            mkdir -p "$fish_subdir"
-            chmod 755 "$fish_subdir"
-        fi
-    done
-
-    # Crear archivo config.fish si no existe
-    local config_fish="$fish_config_dir/config.fish"
-    if ! file_exists "$config_fish"; then
-        echo "Creando archivo config.fish: $config_fish" >&2
-        touch "$config_fish"
-        chmod 644 "$config_fish"
-    fi
-
-    # Crear directorio para variables universales de fish
-    local fish_data_dir="$DISK_DIR/.local/share/fish"
-    if ! directory_exists "$fish_data_dir"; then
-        echo "Creando directorio para variables universales de fish: $fish_data_dir" >&2
-        mkdir -p "$fish_data_dir"
-        chmod 755 "$fish_data_dir"
-    fi
-
-    # Crear archivo de variables universales de fish
-    local fish_vars_file="$fish_data_dir/fish_variables"
-    if ! file_exists "$fish_vars_file"; then
-        echo "Creando archivo de variables universales de fish: $fish_vars_file" >&2
-        touch "$fish_vars_file"
-        chmod 644 "$fish_vars_file"
-    fi
-}
-
 # Función para ejecutar el contenedor Docker
 run_docker_container() {
-    # Preparar directorios persistentes
-    prepare_persistent_directories
-
-    echo "Ejecutando contenedor Docker preconfigurado con home persistente..." >&2
+    echo "Ejecutando contenedor Docker preconfigurado con home persistente..."
     docker run --rm -it \
-        -v "${DISK_DIR}:${CONTAINER_USER_HOME}" \
+        -v "${DISK_DIR}:${CONTAINER_USER_HOME}/cache" \
         -e USER="$USER" \
         -e HOME=${CONTAINER_USER_HOME} \
-        -e XDG_CONFIG_HOME="${CONTAINER_USER_HOME}/.config" \
-        -e XDG_DATA_HOME="${CONTAINER_USER_HOME}/.local/share" \
-        -e XDG_CACHE_HOME="${CONTAINER_USER_HOME}/.cache" \
-        -e FISH_CONFIG_DIR="${CONTAINER_USER_HOME}/.config/fish" \
-        -e FISH_DATA_DIR="${CONTAINER_USER_HOME}/.local/share/fish" \
-        -e FISH_VARIABLES="${CONTAINER_USER_HOME}/.local/share/fish/fish_variables" \
         -u $USER \
         $IMAGE_NAME
 }
@@ -345,9 +270,6 @@ main() {
     # Preparar el directorio de caché
     prepare_cache_directory
     
-    # Preparar directorios persistentes
-    prepare_persistent_directories
-    
     # Obtener commits
     CURRENT_DOTFILES_COMMIT=$(get_current_commit)
     PREVIOUS_DOTFILES_COMMIT=$(get_previous_commit)
@@ -361,6 +283,7 @@ main() {
     if [[ -z "$CURRENT_DOTFILES_COMMIT" ]] || [[ -z "$PREVIOUS_DOTFILES_COMMIT" ]]; then
         echo "No se encontró información de commits. Forzando actualización del contexto..."
         rm -f "$LAST_PROCESSED_COMMIT_FILE"
+        rm -f "$INSTALLATION_ID"
         CURRENT_DOTFILES_COMMIT=""
         PREVIOUS_DOTFILES_COMMIT=""
         SHOULD_UPDATE=true
@@ -427,6 +350,10 @@ main() {
         if [[ -f "$LAST_PROCESSED_COMMIT_FILE" ]]; then
             echo "Último commit procesado:"
             cat "$LAST_PROCESSED_COMMIT_FILE"
+        fi
+        if [[ -f "$INSTALLATION_ID" ]]; then
+            echo "ID de instalación:"
+            cat "$INSTALLATION_ID"
         fi
     fi
     
