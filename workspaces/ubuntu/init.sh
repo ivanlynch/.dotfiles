@@ -9,7 +9,7 @@ echo "Preparando contexto de build para Docker..."
 
 # Ruta a tu repositorio local de dotfiles (ajusta si es necesario)
 DISK_DIR="$HOME/workspaces/ubuntu/cache"
-CONTAINER_USER_HOME="$HOME"
+CONTAINER_USER_HOME="/home/$USER"
 INSTALLATION_ID="$DISK_DIR/.installation_id"
 LAST_PROCESSED_COMMIT_FILE="$DISK_DIR/.last_processed_commit"
 
@@ -134,4 +134,7 @@ mkdir -p "${DISK_DIR}"
 echo "Ejecutando contenedor Docker preconfigurado con home persistente..."
 docker run --rm -it \
     -v "${DISK_DIR}:${CONTAINER_USER_HOME}" \
+    -e USER="$USER" \
+    -e HOME=${CONTAINER_USER_HOME} \
+    -u $USER \
     $IMAGE_NAME
