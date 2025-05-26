@@ -8,10 +8,12 @@ echo "Preparando contexto de build para Docker..."
 # --- Lógica para preparar el directorio ./ansible y ./.config basada en commit de Git ---
 
 # Ruta a tu repositorio local de dotfiles (ajusta si es necesario)
-CACHE_PATH="$HOME/.installation"
+DISK_DIR="$HOME/workspaces/ubuntu/cache"
+CONTAINER_USER_HOME="$HOME"
+INSTALLATION_ID="$DISK_DIR/.installation_id"
 
 # Verificar si el directorio de dotfiles existe y es un repo Git
-if [[ -d "$CACHE_PATH" ]]; then
+if [[ -d "$INSTALLATION_ID" ]]; then
     CURRENT_DOTFILES_COMMIT=$(dotfiles log --format="%H" -n 1) # [10]
     PREVIOUS_DOTFILES_COMMIT=""
 
@@ -46,7 +48,6 @@ if [[ -d "$CACHE_PATH" ]]; then
 
 	mkdir ./.config
 
-
         if [[ -d ~/.config/fish ]]; then
             echo "Copiando directorio fish desde ~/.config/fish a ./.config/fish..."
             cp -rf ~/.config/fish ./.config/fish
@@ -59,6 +60,7 @@ if [[ -d "$CACHE_PATH" ]]; then
         fi
 
         echo "$CURRENT_DOTFILES_COMMIT" > "$LAST_PROCESSED_COMMIT_FILE"
+        echo "$CURRENT_DOTFILES_COMMIT" > "$INSTALLATION_ID"
         echo "Contexto de build actualizado."
     else
         echo "El repositorio de dotfiles no ha cambiado. Usando contexto de build existente."
@@ -83,8 +85,6 @@ if [ $? -ne 0 ]; then
 fi
 
 # ... (resto de tu script para ejecutar el contenedor) ...
-DISK_DIR="$HOME/workspaces/ubuntu/cache"
-CONTAINER_USER_HOME="$HOME"
 mkdir -p "${DISK_DIR}"
 echo "Ejecutando contenedor Docker preconfigurado con home persistente..."
 docker run --rm -it \
