@@ -1,21 +1,13 @@
 ---
-# ansible/tasks/nerdfonts.yml
-
 - name: Nerd Fonts | Definir variables base para la instalación
   ansible.builtin.set_fact:
-    # Estos se definen como hechos aquí.
-    # En las tareas subsiguientes de ESTE ARCHIVO, puedes referirte a ellos como:
-    # {{ fact_font_name }} y {{ fact_font_version }}
     fact_font_name: "{{ nerd_font_name | default('JetBrainsMono') }}"
-    fact_font_version: "{{ nerd_font_version | default('v3.2.1') }}" # Especifica la última versión estable deseada
+    fact_font_version: "{{ nerd_font_version | default('v3.2.1') }}"
   when: ansible_distribution == "Ubuntu"
-  # No es necesario el prefijo ansible_facts aquí, ya que son nombres únicos que estamos creando.
 
 - name: Nerd Fonts | Definir rutas y URLs de descarga
   ansible.builtin.set_fact:
-    # Estos también se definen como hechos.
-    fact_user_fonts_dir: "{{ user_home }}/.local/share/fonts" # Directorio de fuentes del usuario
-    # Usamos los hechos creados en la tarea anterior
+    fact_user_fonts_dir: "{{ user_home }}/.local/share/fonts"
     fact_font_download_url: "https://github.com/ryanoasis/nerd-fonts/releases/download/{{ fact_font_version }}/{{ fact_font_name }}.zip"
     fact_font_temp_download_path: "/tmp/{{ fact_font_name }}.zip"
   when: ansible_distribution == "Ubuntu"
@@ -25,49 +17,44 @@
     name:
       - wget
       - unzip
-      - fontconfig # Necesario para fc-cache
+      - fontconfig
     state: present
     update_cache: yes
   when: ansible_distribution == "Ubuntu"
-  # 'become: true' heredado
 
 - name: Nerd Fonts | Crear directorio de fuentes del usuario si no existe
   ansible.builtin.file:
-    path: "{{ fact_user_fonts_dir }}" # Usamos el hecho definido arriba
+    path: "{{ fact_user_fonts_dir }}"
     state: directory
     owner: "{{ user_name }}"
     group: "{{ user_name }}"
     mode: "0755"
   when: ansible_distribution == "Ubuntu"
-  # 'become: true' heredado
 
 - name: Nerd Fonts | Descargar el archivo ZIP de la Nerd Font seleccionada
   ansible.builtin.get_url:
-    url: "{{ fact_font_download_url }}" # Usamos el hecho definido arriba
-    dest: "{{ fact_font_temp_download_path }}" # Usamos el hecho definido arriba
+    url: "{{ fact_font_download_url }}"
+    dest: "{{ fact_font_temp_download_path }}"
     mode: "0644"
   when: ansible_distribution == "Ubuntu"
   register: nerd_font_downloaded
-  # No necesita 'become' para descargar a /tmp
 
 - name: Nerd Fonts | Descomprimir la Nerd Font en el directorio de fuentes del usuario
   ansible.builtin.unarchive:
-    src: "{{ fact_font_temp_download_path }}" # Usamos el hecho definido arriba
-    dest: "{{ fact_user_fonts_dir }}" # Usamos el hecho definido arriba
+    src: "{{ fact_font_temp_download_path }}"
+    dest: "{{ fact_user_fonts_dir }}"
     owner: "{{ user_name }}"
     group: "{{ user_name }}"
     remote_src: yes
-    # Ejemplo de un archivo que existiría después de la extracción para ayudar con la idempotencia
-    # El nombre exacto puede variar ligeramente según la fuente y si tiene espacios
-    creates: "{{ fact_user_fonts_dir }}/{{ fact_font_name | replace(' ', '') }}NerdFont-Regular.ttf"
+    creates: "{{ fact_user_fonts_dir }}/{{ fact_font_name | replace(' ', '') }}NerdFont-Regular.ttf" # [2]
   when:
     - ansible_distribution == "Ubuntu"
     - nerd_font_downloaded.changed
-  # 'become: true' heredado (para establecer owner/group si es necesario, aunque el usuario debería tener permisos)
+  register: nerd_font_unarchive_result
 
 - name: Nerd Fonts | Limpiar archivo ZIP descargado
   ansible.builtin.file:
-    path: "{{ fact_font_temp_download_path }}" # Usamos el hecho definido arriba
+    path: "{{ fact_font_temp_download_path }}"
     state: absent
   when:
     - ansible_distribution == "Ubuntu"
@@ -75,6 +62,8 @@
 
 - name: Nerd Fonts | Actualizar la caché de fuentes del sistema
   ansible.builtin.command: "fc-cache -fv"
-  when: ansible_distribution == "Ubuntu"
+  when:
+    - ansible_distribution == "Ubuntu"
+    - nerd_font_unarchive_result.changed
   changed_when: false
-  # 'become: true' heredado
+  become: true

@@ -1,45 +1,48 @@
 ---
-- name: Neovim | Remove folder if exists
-  shell: rm -rf ~/neovim
-  tags:
-    - install
-    - neovim
-- name: Neovim | Install Dependencies
-  block:
-  - name: Install ninja-build
-    ansible.builtin.apt:
-      name: ninja-build
-      state: present
-  - name: Neovim | Install gettext
-    ansible.builtin.apt:
-      name: gettext
-      state: present
-  - name: Neovim | Install cmake
-    ansible.builtin.apt:
-      name: cmake
-      state: present
-  - name: Neovim | Install unzip
-    ansible.builtin.apt:
-      name: unzip
-      state: present
-  - name: Neovim | Install curl
-    ansible.builtin.apt:
-      name: curl
-      state: present
-- name: Neovim | Clone Repository
-  git:
+- name: Neovim | Instalar Dependencias (Ubuntu)
+  ansible.builtin.apt:
+    name:
+      - ninja-build
+      - gettext
+      - cmake
+      - unzip
+      - curl
+      - build-essential
+      - pkg-config
+      - libtool
+      - libtool-bin
+      - autoconf
+      - automake
+      - cmake
+      - g++
+      - unzip
+    state: present
+    update_cache: yes
+  become: true
+
+- name: Neovim | Clonar o actualizar el repositorio de Neovim
+  ansible.builtin.git:
     repo: "https://github.com/neovim/neovim.git"
     dest: "{{ user_home }}/neovim"
-  tags:
-    - install
-    - neovim
-- name: Neovim | Build from source
-  shell: "cd {{ user_home }}/neovim && make CMAKE_BUILD_TYPE=RelWithDebInfo"
-  tags:
-    - install
-    - neovim
-- name: Neovim | Install
-  shell: "cd {{ user_home }}/neovim && make install"
-  tags:
-    - install
-    - neovim
+    version: master
+    update: yes
+  become: yes
+  become_user: "{{ user_name }}"
+  register: neovim_git_clone
+
+- name: Neovim | Compilar Neovim desde la fuente
+  ansible.builtin.command: make CMAKE_BUILD_TYPE=RelWithDebInfo
+  args:
+    chdir: "{{ user_home }}/neovim"
+    creates: "{{ user_home }}/neovim/build/bin/nvim"
+  become: yes
+  become_user: "{{ user_name }}"
+  register: neovim_build_result
+
+- name: Neovim | Instalar Neovim
+  ansible.builtin.command: make install
+  args:
+    chdir: "{{ user_home }}/neovim"
+    creates: "/usr/local/bin/nvim"
+  when: neovim_build_result.changed
+  become: true

@@ -1,45 +1,35 @@
 ---
-# ansible/tasks/fzf_ubuntu.yml
-
 - name: FZF | Instalar git (prerrequisito)
   ansible.builtin.apt:
     name: git
     state: present
-    update_cache: yes # Considera quitarlo si otra tarea apt reciente ya actualizó
+    update_cache: yes
   when: ansible_distribution == "Ubuntu"
   become: true
 
-- name: FZF | Clonar el repositorio de fzf
+- name: FZF | Clonar o actualizar el repositorio de fzf
   ansible.builtin.git:
     repo: "https://github.com/junegunn/fzf.git"
-    dest: "{{ user_home }}/.fzf" # Usando tus variables estándar
+    dest: "{{ user_home }}/.fzf"
     depth: 1
-    # version: main # O una etiqueta de release
+    update: yes
   become: true
-  become_user: "{{ user_name }}" # Clonar como el usuario
+  become_user: "{{ user_name }}"
   when: ansible_distribution == "Ubuntu"
   register: fzf_clone_result
 
 - name: FZF | Ejecutar el script de instalación de fzf
   ansible.builtin.command:
     cmd: "{{ user_home }}/.fzf/install --all"
-    # 'creates' ayuda a la idempotencia. El script de instalación
-    # usualmente pone el binario o un enlace en ~/.local/bin/fzf O usa ~/.fzf/bin/fzf directamente.
-    # Es más seguro comprobar el binario principal dentro del directorio .fzf si no estás seguro.
     creates: "{{ user_home }}/.fzf/bin/fzf"
   become: true
-  become_user: "{{ user_name }}" # Ejecutar como el usuario para que modifique sus archivos de config
+  become_user: "{{ user_name }}"
   when:
     - ansible_distribution == "Ubuntu"
   environment:
-    # Asegurar que el script de instalación sepa dónde está el home,
-    # aunque become_user debería manejar esto.
     HOME: "{{ user_home }}"
   register: fzf_install_script_result
   changed_when: "'source {{ user_home }}/.fzf.bash' in fzf_install_script_result.stdout or 'source {{ user_home }}/.fzf.zsh' in fzf_install_script_result.stdout or 'source (fzf --fish)' in fzf_install_script_result.stdout or 'Already installed' not in fzf_install_script_result.stdout"
-  # La detección de 'changed_when' puede ser complicada con el script de fzf,
-  # ya que siempre imprime mucho. Una heurística es buscar si sugiere 'sourcear' algo
-  # o si NO dice 'Already installed' o similar.
 
 - name: FZF | Mostrar resultado del script de instalación (debug)
   ansible.builtin.debug:
@@ -47,4 +37,3 @@
   when:
     - ansible_distribution == "Ubuntu"
     - fzf_install_script_result is defined
-    # - fzf_install_script_result.changed # Mostrar si algo cambió
