@@ -64,30 +64,72 @@ save_commit_to_temp() {
     local commit="$1"
     if [[ -n "$commit" ]]; then
         echo "Guardando nuevo commit: $commit en $TEMP_COMMIT_FILE"
-        echo "$commit" > "$TEMP_COMMIT_FILE"
+        # Asegurarnos de que el directorio temporal existe
+        mkdir -p "$(dirname "$TEMP_COMMIT_FILE")"
+        # Guardar el commit con redirección directa
+        printf "%s" "$commit" > "$TEMP_COMMIT_FILE"
         chmod 644 "$TEMP_COMMIT_FILE"
         
-        if ! file_exists "$TEMP_COMMIT_FILE"; then
-            echo "ERROR: No se pudo guardar el archivo de commit temporal"
+        # Verificar que el archivo se creó y tiene el contenido correcto
+        if [[ ! -f "$TEMP_COMMIT_FILE" ]]; then
+            echo "ERROR: No se pudo crear el archivo temporal"
             return 1
         fi
+        
+        local saved_commit
+        saved_commit=$(cat "$TEMP_COMMIT_FILE")
+        if [[ "$saved_commit" != "$commit" ]]; then
+            echo "ERROR: El commit guardado no coincide con el original"
+            echo "Original: $commit"
+            echo "Guardado: $saved_commit"
+            return 1
+        fi
+        
+        echo "Commit guardado correctamente en archivo temporal"
+        return 0
     fi
+    return 1
 }
 
 # Función para copiar el commit del archivo temporal al directorio de caché
 copy_commit_to_cache() {
-    if file_exists "$TEMP_COMMIT_FILE"; then
-        echo "Copiando archivo de commit temporal al directorio de caché..."
-        cp "$TEMP_COMMIT_FILE" "$LAST_PROCESSED_COMMIT_FILE"
-        cp "$TEMP_COMMIT_FILE" "$INSTALLATION_ID"
-        chmod 644 "$LAST_PROCESSED_COMMIT_FILE"
-        chmod 644 "$INSTALLATION_ID"
-        
-        if ! file_exists "$LAST_PROCESSED_COMMIT_FILE"; then
-            echo "ERROR: No se pudo copiar el archivo de commit al directorio de caché"
-            return 1
-        fi
+    if [[ ! -f "$TEMP_COMMIT_FILE" ]]; then
+        echo "ERROR: No existe el archivo temporal de commit"
+        return 1
     fi
+    
+    echo "Copiando archivo de commit temporal al directorio de caché..."
+    
+    # Asegurarnos de que el directorio de caché existe y tiene los permisos correctos
+    mkdir -p "$DISK_DIR"
+    chmod 755 "$DISK_DIR"
+    
+    # Copiar el archivo con redirección directa
+    local commit
+    commit=$(cat "$TEMP_COMMIT_FILE")
+    printf "%s" "$commit" > "$LAST_PROCESSED_COMMIT_FILE"
+    printf "%s" "$commit" > "$INSTALLATION_ID"
+    
+    chmod 644 "$LAST_PROCESSED_COMMIT_FILE"
+    chmod 644 "$INSTALLATION_ID"
+    
+    # Verificar que los archivos se copiaron correctamente
+    if [[ ! -f "$LAST_PROCESSED_COMMIT_FILE" ]] || [[ ! -f "$INSTALLATION_ID" ]]; then
+        echo "ERROR: No se pudieron copiar los archivos al directorio de caché"
+        return 1
+    fi
+    
+    local saved_commit
+    saved_commit=$(cat "$LAST_PROCESSED_COMMIT_FILE")
+    if [[ "$saved_commit" != "$commit" ]]; then
+        echo "ERROR: El commit guardado en caché no coincide con el original"
+        echo "Original: $commit"
+        echo "Guardado: $saved_commit"
+        return 1
+    fi
+    
+    echo "Archivos copiados correctamente al directorio de caché"
+    return 0
 }
 
 # Función para preparar el contexto de build
@@ -292,17 +334,26 @@ main() {
         
         echo "Contenido del archivo temporal:"
         cat "$TEMP_COMMIT_FILE"
+        
+        # Copiar el commit del archivo temporal al directorio de caché
+        if ! copy_commit_to_cache; then
+            echo "ERROR: Falló la copia del commit al directorio de caché"
+            exit 1
+        fi
+        
+        # Verificar que los archivos se copiaron correctamente
+        echo "Verificando archivos de caché antes de ejecutar el contenedor:"
+        ls -la "$DISK_DIR"
+        echo "Contenido de los archivos de caché:"
+        if [[ -f "$LAST_PROCESSED_COMMIT_FILE" ]]; then
+            echo "Último commit procesado:"
+            cat "$LAST_PROCESSED_COMMIT_FILE"
+        fi
+        if [[ -f "$INSTALLATION_ID" ]]; then
+            echo "ID de instalación:"
+            cat "$INSTALLATION_ID"
+        fi
     fi
-    
-    # Copiar el commit del archivo temporal al directorio de caché
-    if ! copy_commit_to_cache; then
-        echo "ERROR: Falló la copia del commit al directorio de caché"
-        exit 1
-    fi
-    
-    # Verificar que los archivos se copiaron correctamente
-    echo "Verificando archivos de caché antes de ejecutar el contenedor:"
-    ls -la "$DISK_DIR"
     
     # Ejecutar el contenedor Docker
     run_docker_container
