@@ -242,6 +242,14 @@ prepare_persistent_directories() {
             chmod 755 "$fish_subdir"
         fi
     done
+
+    # Crear archivo config.fish si no existe
+    local config_fish="$fish_config_dir/config.fish"
+    if ! file_exists "$config_fish"; then
+        echo "Creando archivo config.fish: $config_fish" >&2
+        touch "$config_fish"
+        chmod 644 "$config_fish"
+    fi
 }
 
 # Función para ejecutar el contenedor Docker
@@ -258,6 +266,10 @@ run_docker_container() {
         -e USER="$USER" \
         -e HOME=${CONTAINER_USER_HOME} \
         -e XDG_CONFIG_HOME="${CONTAINER_USER_HOME}/.config" \
+        -e XDG_DATA_HOME="${CONTAINER_USER_HOME}/.local/share" \
+        -e XDG_CACHE_HOME="${CONTAINER_USER_HOME}/.cache" \
+        -e FISH_CONFIG_DIR="${CONTAINER_USER_HOME}/.config/fish" \
+        -e FISH_DATA_DIR="${CONTAINER_USER_HOME}/.local/share/fish" \
         -u $USER \
         $IMAGE_NAME
 }
