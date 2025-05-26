@@ -12,6 +12,7 @@ DISK_DIR="$HOME/workspaces/ubuntu/cache"
 CONTAINER_USER_HOME="/home/$USER"
 INSTALLATION_ID="$DISK_DIR/.installation_id"
 LAST_PROCESSED_COMMIT_FILE="$DISK_DIR/.last_processed_commit"
+TEMP_COMMIT_FILE="/tmp/.last_processed_commit"
 
 echo "Directorio de caché: $DISK_DIR"
 echo "Archivo de commit anterior: $LAST_PROCESSED_COMMIT_FILE"
@@ -105,22 +106,18 @@ if [[ "$SHOULD_UPDATE" = true ]]; then
     fi
 
     if [[ -n "$CURRENT_DOTFILES_COMMIT" ]]; then
-        echo "Guardando nuevo commit: $CURRENT_DOTFILES_COMMIT en $LAST_PROCESSED_COMMIT_FILE"
-        echo "$CURRENT_DOTFILES_COMMIT" > "$LAST_PROCESSED_COMMIT_FILE"
-        echo "$CURRENT_DOTFILES_COMMIT" > "$INSTALLATION_ID"
-        chmod 644 "$LAST_PROCESSED_COMMIT_FILE"
-        chmod 644 "$INSTALLATION_ID"
+        echo "Guardando nuevo commit: $CURRENT_DOTFILES_COMMIT en $TEMP_COMMIT_FILE"
+        echo "$CURRENT_DOTFILES_COMMIT" > "$TEMP_COMMIT_FILE"
+        chmod 644 "$TEMP_COMMIT_FILE"
         
         # Verificar que el commit se guardó correctamente
-        if [[ -f "$LAST_PROCESSED_COMMIT_FILE" ]]; then
+        if [[ -f "$TEMP_COMMIT_FILE" ]]; then
             echo "Verificando que el commit se guardó correctamente:"
-            cat "$LAST_PROCESSED_COMMIT_FILE"
+            cat "$TEMP_COMMIT_FILE"
             echo "Permisos del archivo:"
-            ls -l "$LAST_PROCESSED_COMMIT_FILE"
-            echo "Contenido del directorio de caché:"
-            ls -la "$DISK_DIR"
+            ls -l "$TEMP_COMMIT_FILE"
         else
-            echo "ERROR: No se pudo guardar el archivo de commit"
+            echo "ERROR: No se pudo guardar el archivo de commit temporal"
             exit 1
         fi
     fi
@@ -169,14 +166,15 @@ fi
 mkdir -p "$DISK_DIR"
 chmod 755 "$DISK_DIR"
 
-# Asegurarnos de que los archivos de caché existen y tienen los permisos correctos
-if [[ -n "$CURRENT_DOTFILES_COMMIT" ]]; then
-    echo "$CURRENT_DOTFILES_COMMIT" > "$LAST_PROCESSED_COMMIT_FILE"
-    echo "$CURRENT_DOTFILES_COMMIT" > "$INSTALLATION_ID"
+# Copiar el archivo de commit temporal al directorio de caché
+if [[ -f "$TEMP_COMMIT_FILE" ]]; then
+    echo "Copiando archivo de commit temporal al directorio de caché..."
+    cp "$TEMP_COMMIT_FILE" "$LAST_PROCESSED_COMMIT_FILE"
+    cp "$TEMP_COMMIT_FILE" "$INSTALLATION_ID"
     chmod 644 "$LAST_PROCESSED_COMMIT_FILE"
     chmod 644 "$INSTALLATION_ID"
     
-    # Verificar que los archivos se guardaron correctamente
+    # Verificar que los archivos se copiaron correctamente
     echo "Verificando archivos de caché antes de ejecutar el contenedor:"
     ls -la "$DISK_DIR"
 fi
