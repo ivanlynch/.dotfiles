@@ -2,8 +2,7 @@
 
 # --- Variables globales ---
 
-DISK_DIR="$HOME/workspaces/ubuntu"
-CACHE_DIR="$DISK_DIR/cache"
+DISK_DIR="$HOME/workspaces/ubuntu/disk"
 CONTAINER_USER_HOME="/home/$USER"
 LAST_PROCESSED_COMMIT_FILE="$DISK_DIR/.last_dotfiles_commit"
 TEMP_COMMIT_FILE="/tmp/.last_processed_commit"
@@ -27,7 +26,7 @@ file_exists() {
 
 prepare_persistent_directories() {
     # Crear directorios base
-    mkdir -p "$CACHE_DIR" "$DISK_DIR/home"
+    mkdir -p "$DISK_DIR" "$DISK_DIR/home"
     
     # Establecer ownership del host (no usar chmod/chown aquí)
     echo "Directorios persistentes preparados (permisos manejados por UID/GID del host)"
@@ -55,11 +54,11 @@ get_previous_commit() {
     fi
 }
 
-prepare_cache_directory() {
-    if ! directory_exists "$CACHE_DIR"; then
-        echo "Creando directorio de caché: $CACHE_DIR"
-        mkdir -p "$CACHE_DIR"
-        chmod 700 "$CACHE_DIR"
+prepare_disk_directory() {
+    if ! directory_exists "$DISK_DIR"; then
+        echo "Creando directorio de caché: $DISK_DIR"
+        mkdir -p "$DISK_DIR"
+        chmod 700 "$DISK_DIR"
     fi
 }
 
@@ -120,8 +119,7 @@ build_docker_image() {
 run_docker_container() {
     echo "Ejecutando contenedor con home persistente..." >&2
     docker run --rm -it \
-        -v "$DISK_DIR/home:/home/ubuntu" \
-        -v "$CACHE_DIR:/home/ubuntu/cache" \
+        -v "$DISK_DIR:/home/ubuntu" \
         -e USER="ubuntu" \
         -e HOME="/home/ubuntu" \
         -e XDG_CONFIG_HOME="/home/ubuntu/.config" \
@@ -137,7 +135,7 @@ main() {
 
     # Preparar directorios persistentes
     prepare_persistent_directories
-    prepare_cache_directory
+    prepare_disk_directory
 
     # Gestión de commits
     local current_commit=$(get_current_commit)
