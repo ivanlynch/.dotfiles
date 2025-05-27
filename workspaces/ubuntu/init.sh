@@ -85,15 +85,17 @@ prepare_build_context() {
     mkdir -p ./.config
 
     if directory_exists "$HOME/ansible"; then
+        echo "Copiando Ansible desde $HOME/ansible a $(pwd)/ansible"
         cp -rf "$HOME/ansible" .
     fi
 
     if directory_exists "$HOME/.config/fish"; then
+        echo "Copiando configuración de Fish desde $HOME/.config/fish a $(pwd)/.config/fish"
         cp -rf "$HOME/.config/fish" ./.config/
     fi
 
-    # Crear directorio nvim aunque esté vacío para evitar errores en Docker build
     if directory_exists "$HOME/.config/nvim"; then
+        echo "Copiando configuración de Neovim desde $HOME/.config/nvim a $(pwd)/.config/nvim"
         cp -rf "$HOME/.config/nvim" ./.config/
     fi
 }
