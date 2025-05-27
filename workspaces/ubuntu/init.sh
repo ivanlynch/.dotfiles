@@ -4,7 +4,6 @@
 DISK_DIR="$HOME/workspaces/ubuntu/disk"
 CONTAINER_USER_HOME="/home/$USER"
 LAST_PROCESSED_COMMIT_FILE="$DISK_DIR/.last_dotfiles_commit"
-TEMP_COMMIT_FILE="/tmp/.last_processed_commit"
 IMAGE_NAME="ubuntu-development-environment"
 
 USER_UID=$(id -u)
@@ -60,22 +59,6 @@ prepare_disk_directory() {
     fi
 }
 
-save_commit_to_temp() {
-    local commit="$1"
-    [[ -z "$commit" ]] && return 1
-    echo "Guardando nuevo commit: $commit en $TEMP_COMMIT_FILE" >&2
-    mkdir -p "$(dirname "$TEMP_COMMIT_FILE")"
-    echo "$commit" > "$TEMP_COMMIT_FILE"
-    chmod 600 "$TEMP_COMMIT_FILE"
-}
-
-copy_commit_to_cache() {
-    [[ ! -f "$TEMP_COMMIT_FILE" ]] && return 1
-    echo "Copiando archivo de commit temporal al directorio de caché..." >&2
-    mkdir -p "$(dirname "$LAST_PROCESSED_COMMIT_FILE")"
-    cp -f "$TEMP_COMMIT_FILE" "$LAST_PROCESSED_COMMIT_FILE"
-    chmod 600 "$LAST_PROCESSED_COMMIT_FILE"
-}
 
 prepare_build_context() {
     echo "Preparando contexto de build..."
@@ -93,10 +76,12 @@ prepare_build_context() {
         echo "Copiando configuración de Neovim desde $HOME/.config/nvim a $(pwd)/.config/nvim"
         cp -rf "$HOME/.config/nvim" ./.config/
     fi
+
+    echo "$(ls -la .config)"
 }
 
 check_build_requirements() {
-    local required_files=("Dockerfile" "bootstrap.yml")
+    local required_files=("Dockerfile" "bootstrap.yml" ".config/fish/config.fish" ".config/nvim/init.lua")
     for file in "${required_files[@]}"; do
         if ! file_exists "./$file"; then
             echo "ERROR: No se encontró $file"
@@ -108,21 +93,23 @@ check_build_requirements() {
 build_docker_image() {
     echo "Construyendo imagen Docker ($IMAGE_NAME)..."
     echo "Usando UID: $USER_UID, GID: $USER_GID, Usuario: $USER_NAME"
+
+    echo "$(ls -la .config)"
+
     docker build \
         --build-arg USER_UID="$USER_UID" \
+        --no-cache \
+        --progress=plain \
         --build-arg USER_GID="$USER_GID" \
         --build-arg USER_NAME="$USER_NAME" \
         -t "$IMAGE_NAME" . || return 1
 }
 
 run_docker_container() {
-    echo "Ejecutando contenedor con home persistente..." >&2
-    echo "Montando volúmenes con permisos del host (UID: $USER_UID, GID: $USER_GID)"
+    echo "Ejecutando contenedor $IMAGE_NAME" >&2
+
     docker run --rm -it \
-        -v "$DISK_DIR/cache:/home/$USER_NAME/cache" \
-        -v "$DISK_DIR/config:/home/$USER_NAME/.config" \
-        -v /etc/passwd:/etc/passwd:ro \
-        -v /etc/group:/etc/group:ro \
+        -v "$DISK_DIR:/home/$USER_NAME" \
         -e USER="$USER_NAME" \
         -e HOME="/home/$USER_NAME" \
         -u "$USER_UID:$USER_GID" \
@@ -144,7 +131,7 @@ main() {
     echo "Commit anterior: ${previous_commit:-N/A}"
 
     # Determinar necesidad de actualización
-    local should_update=false
+    local should_update=true
     if [[ "$current_commit" != "$previous_commit" ]]; then
         should_update=true
         echo "Cambios detectados, actualizando contexto..."
@@ -161,7 +148,7 @@ main() {
 
     # Guardar commit actual
     if [[ -n "$current_commit" ]]; then
-        save_commit_to_temp "$current_commit" && copy_commit_to_cache
+        echo "$current_commit" > "$LAST_PROCESSED_COMMIT_FILE"
     fi
 
     # Ejecutar contenedor

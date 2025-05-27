@@ -116,15 +116,6 @@ if ! config config status.showUntrackedFiles no; then
     exit 1
 fi
 
-# Verificar directorios esenciales
-log "info" "Verificando directorios esenciales..."
-for dir in "$HOME/.config" "$HOME/workspaces/ubuntu" "$HOME/ansible/roles/neovim" "$HOME/ansible/roles/zsh"; do
-    if ! mkdir -p "$dir"; then
-        log "error" "Error al crear directorio $dir"
-        exit 1
-    fi
-done
-
 # Configurar alias en el shell actual
 CURRENT_SHELL=$(basename "$SHELL")
 log "info" "Configurando alias para el shell: $CURRENT_SHELL"

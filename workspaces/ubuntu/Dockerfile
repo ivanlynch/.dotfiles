@@ -59,11 +59,9 @@ RUN set -eux; \
 USER $USER_NAME
 WORKDIR /home/$USER_NAME
 
-# --- Copiar archivos de configuración ---
-COPY --chown=$USER_NAME:$USER_NAME .config/fish /home/$USER_NAME/.config/
-COPY --chown=$USER_NAME:$USER_NAME .config/nvim /home/$USER_NAME/.config/
-COPY --chown=$USER_NAME:$USER_NAME ansible /home/$USER_NAME/ansible/
-COPY --chown=$USER_NAME:$USER_NAME bootstrap.yml /home/$USER_NAME/
+COPY . .
+
+RUN ls -la /home/$USER_NAME/.config
 
 # --- Ejecutar Ansible ---
 RUN ansible-playbook -i localhost, -c local bootstrap.yml \
