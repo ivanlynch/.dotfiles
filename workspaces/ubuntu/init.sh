@@ -129,7 +129,7 @@ main() {
     echo "Commit anterior: ${previous_commit:-N/A}"
 
     # Determinar necesidad de actualización
-    local should_update=true
+    local should_update=false
     if [[ "$current_commit" != "$previous_commit" ]]; then
         should_update=true
         echo "Cambios detectados, actualizando contexto..."
