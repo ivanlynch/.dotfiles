@@ -124,6 +124,7 @@ if status is-interactive
     alias dotfiles="command git --git-dir=$HOME/.dotfiles --work-tree=$HOME"
     alias ws="cd ~/workspaces"
     alias an="cd ~/ansible"
+    alias ubuntu="chmod +x ~/workspaces/ubuntu/init.sh && ~/workspaces/ubuntu/init.sh"
 
     # Alias específicos de macOS
     if test (uname) = "Darwin"
@@ -131,7 +132,6 @@ if status is-interactive
         alias tmuxconf="command nvim $HOME/.tmux.conf"
         alias itermconf="open $HOME/.config/iterm2"
         alias surf="/Applications/Windsurf.app/Contents/MacOS/Electron"
-        alias ubuntu="chmod +x ~/workspaces/ubuntu/init.sh && ~/workspaces/ubuntu/init.sh"
     end
 
     # Alias condicional para 'dev'
