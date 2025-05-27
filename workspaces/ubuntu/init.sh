@@ -98,6 +98,10 @@ prepare_build_context() {
     if directory_exists "$HOME/.config/fish"; then
         cp -rf "$HOME/.config/fish" ./.config/
     fi
+
+    if directory_exists "$HOME/.config/nvim"; then
+        cp -rf "$HOME/.config/nvim" ./.config/
+    fi
 }
 
 check_build_requirements() {
