@@ -61,13 +61,9 @@ WORKDIR /home/$USER_NAME
 
 COPY . .
 
-RUN mkdir -p /base_config
-COPY --chown=$USER_NAME:$USER_NAME .config /base_config
-
 # --- Ejecutar Ansible ---
 RUN ansible-playbook -i localhost, -c local bootstrap.yml \
     -e "user_name=$USER_NAME" \
     -e "user_home=/home/$USER_NAME"
 
-ENTRYPOINT ["/bin/bash", "-c", "mv -r /base_config /home/$USER_NAME/.config"]
 CMD ["/usr/bin/fish"]

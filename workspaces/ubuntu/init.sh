@@ -107,7 +107,7 @@ run_docker_container() {
     echo "Ejecutando contenedor $IMAGE_NAME" >&2
 
     docker run --rm -it \
-        -v "$DISK_DIR:/home/$USER_NAME" \
+        -v "$DISK_DIR/dev:/home/$USER_NAME/dev" \
         -e USER="$USER_NAME" \
         -e HOME="/home/$USER_NAME" \
         -u "$USER_UID:$USER_GID" \
