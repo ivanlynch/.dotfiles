@@ -12,9 +12,17 @@ USER_GID=$(id -g)
 USER_NAME=$(whoami)
 
 # --- Funciones de utilidad ---
-command_exists() { command -v "$1" &> /dev/null; }
-directory_exists() { [[ -d "$1" ]]; }
-file_exists() { [[ -f "$1" ]]; }
+command_exists() {
+    command -v "$1" &> /dev/null
+}
+
+directory_exists() {
+    [[ -d "$1" ]]
+}
+
+file_exists() {
+    [[ -f "$1" ]]
+}
 
 # --- Funciones principales ---
 prepare_persistent_directories() {
@@ -99,6 +107,7 @@ check_build_requirements() {
 
 build_docker_image() {
     echo "Construyendo imagen Docker ($IMAGE_NAME)..."
+    echo "Usando UID: $USER_UID, GID: $USER_GID, Usuario: $USER_NAME"
     docker build \
         --build-arg USER_UID="$USER_UID" \
         --build-arg USER_GID="$USER_GID" \
@@ -108,33 +117,40 @@ build_docker_image() {
 
 run_docker_container() {
     echo "Ejecutando contenedor con home persistente..." >&2
+    echo "Montando volúmenes con permisos del host (UID: $USER_UID, GID: $USER_GID)"
     docker run --rm -it \
         -v "$DISK_DIR/cache:/home/$USER_NAME/cache" \
         -v "$DISK_DIR/config:/home/$USER_NAME/.config" \
+        -v /etc/passwd:/etc/passwd:ro \
+        -v /etc/group:/etc/group:ro \
         -e USER="$USER_NAME" \
         -e HOME="/home/$USER_NAME" \
         -u "$USER_UID:$USER_GID" \
-        -v /etc/passwd:/etc/passwd:ro \
-        -v /etc/group:/etc/group:ro \
         "$IMAGE_NAME"
 }
 
+# --- Función principal ---
 main() {
     cd "$(dirname "$0")" || exit 1
+    
+    # Preparar directorios persistentes
     prepare_persistent_directories
     prepare_disk_directory
 
+    # Gestión de commits
     local current_commit=$(get_current_commit)
     local previous_commit=$(get_previous_commit)
     echo "Commit actual: ${current_commit:-N/A}"
     echo "Commit anterior: ${previous_commit:-N/A}"
 
+    # Determinar necesidad de actualización
     local should_update=false
     if [[ "$current_commit" != "$previous_commit" ]]; then
         should_update=true
         echo "Cambios detectados, actualizando contexto..."
     fi
 
+    # Construir imagen si es necesario
     if [[ "$should_update" = true ]]; then
         prepare_build_context || exit 1
         check_build_requirements || exit 1
@@ -143,13 +159,16 @@ main() {
         echo "Usando imagen existente: $IMAGE_NAME"
     fi
 
+    # Guardar commit actual
     if [[ -n "$current_commit" ]]; then
         save_commit_to_temp "$current_commit" && copy_commit_to_cache
     fi
 
+    # Ejecutar contenedor
     run_docker_container
 }
 
+# --- Ejecución ---
 if [[ "$1" == "--test" ]]; then
     echo "Ejecutando pruebas..."
 else
