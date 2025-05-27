@@ -114,7 +114,7 @@ check_build_requirements() {
 
 build_docker_image() {
     echo "Construyendo imagen Docker ($IMAGE_NAME)..."
-    docker build --build-arg USER_UID=1000 --build-arg USER_GID=1000 -t $IMAGE_NAME . || return 1
+    docker build --build-arg USER_UID=$(id -u) --build-arg USER_GID=$(id -g) -t $IMAGE_NAME . || return 1
 }
 
 run_docker_container() {
