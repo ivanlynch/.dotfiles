@@ -120,13 +120,13 @@ build_docker_image() {
 run_docker_container() {
     echo "Ejecutando contenedor con home persistente..." >&2
     docker run --rm -it \
-        -v "$DISK_DIR/home:$CONTAINER_USER_HOME" \
-        -v "$CACHE_DIR:$CONTAINER_USER_HOME/cache" \
-        -e USER="$USER" \
-        -e HOME="$CONTAINER_USER_HOME" \
-        -e XDG_CONFIG_HOME="$CONTAINER_USER_HOME/.config" \
-        -e XDG_DATA_HOME="$CONTAINER_USER_HOME/.local/share" \
-        -u "$USER" \
+        -v "$DISK_DIR/home:/home/ubuntu" \  # Montar sobre el home del usuario existente
+        -v "$CACHE_DIR:/home/ubuntu/cache" \
+        -e USER="ubuntu" \
+        -e HOME="/home/ubuntu" \
+        -e XDG_CONFIG_HOME="/home/ubuntu/.config" \
+        -e XDG_DATA_HOME="/home/ubuntu/.local/share" \
+        -u "ubuntu" \
         "$IMAGE_NAME"
 }
 

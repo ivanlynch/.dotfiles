@@ -1,18 +1,12 @@
-# Dockerfile actualizado
 ARG TARGETPLATFORM
-
 FROM --platform=$BUILDPLATFORM ubuntu:latest
 
-# --- Nuevos argumentos para UID/GID ---
-ARG USER_UID=1000
-ARG USER_GID=1000
-ARG USER_NAME=ivanlynch
-
 # --- Variables de entorno ---
-ENV USER_HOME=/home/${USER_NAME}
 ENV DEBIAN_FRONTEND=noninteractive
+ARG USER_UID=1000  # Debe coincidir con tu UID en el host
+ARG USER_GID=1000  # Debe coincidir con tu GID en el host
 
-# Instalar dependencias (sin cambios)
+# --- Instalar dependencias ---
 RUN apt-get update && apt-get install -y \
     software-properties-common \
     build-essential \
@@ -29,34 +23,31 @@ RUN apt-get update && apt-get install -y \
 
 RUN pip3 install ansible --break-system-packages
 
-# Configurar locale
+# --- Configurar locale ---
 RUN locale-gen en_US.UTF-8
 ENV LANG="en_US.UTF-8"
 ENV LANGUAGE="en_US:en"
 ENV LC_ALL="en_US.UTF-8"
 
-# --- Crear usuario con UID/GID específicos ---
-RUN groupadd sudo || true \
-    && (groupadd -g $USER_GID $USER_NAME || true) \
-    && useradd -m -u $USER_UID -g $USER_GID -G sudo -s /bin/bash $USER_NAME \
-    && echo "$USER_NAME ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/$USER_NAME \
-    && chmod 0440 /etc/sudoers.d/$USER_NAME
+# --- Usar usuario existente (ubuntu) y ajustar UID/GID ---
+RUN usermod -u $USER_UID ubuntu \
+    && groupmod -g $USER_GID ubuntu \
+    && chown -R $USER_UID:$USER_GID /home/ubuntu \
+    && echo "ubuntu ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/ubuntu \
+    && chmod 0440 /etc/sudoers.d/ubuntu
 
-WORKDIR $USER_HOME
+USER ubuntu
+WORKDIR /home/ubuntu
 
-# Copiar archivos de configuración
-COPY .config/fish $USER_HOME/.config/fish/
-COPY .config/nvim $USER_HOME/.config/nvim/
-COPY ansible $USER_HOME/ansible/
-COPY bootstrap.yml $USER_HOME/
+# --- Copiar archivos de configuración ---
+COPY --chown=ubuntu:ubuntu .config/fish /home/ubuntu/.config/fish/
+COPY --chown=ubuntu:ubuntu .config/nvim /home/ubuntu/.config/nvim/
+COPY --chown=ubuntu:ubuntu ansible /home/ubuntu/ansible/
+COPY --chown=ubuntu:ubuntu bootstrap.yml /home/ubuntu/
 
-# --- Asegurar permisos correctos ---
-RUN chown -R $USER_UID:$USER_GID $USER_HOME
-
-# Ejecutar Ansible
+# --- Ejecutar Ansible ---
 RUN ansible-playbook -i localhost, -c local bootstrap.yml \
-    -e "user_name=${USER_NAME}" \
-    -e "user_home=${USER_HOME}"
+    -e "user_name=ubuntu" \
+    -e "user_home=/home/ubuntu"
 
-USER $USER_NAME
 CMD ["/usr/bin/fish"]
