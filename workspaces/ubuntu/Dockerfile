@@ -4,8 +4,8 @@ ARG TARGETPLATFORM
 FROM --platform=$BUILDPLATFORM ubuntu:latest
 
 # --- Nuevos argumentos para UID/GID ---
-ARG USER_UID=1000  # Cambiar por tu UID
-ARG USER_GID=1000  # Cambiar por tu GID
+ARG USER_UID=1000  # Reemplaza con tu UID real (ejecuta 'id -u' en el host)
+ARG USER_GID=1000  # Reemplaza con tu GID real (ejecuta 'id -g' en el host)
 
 ENV USER_NAME=ivanlynch
 ENV USER_HOME=/home/${USER_NAME}
@@ -36,10 +36,9 @@ ENV LC_ALL="en_US.UTF-8"
 
 # --- Crear usuario con UID/GID específicos ---
 RUN groupadd -g $USER_GID $USER_NAME && \
-    useradd -m -u $USER_UID -g $USER_GID -s /bin/bash $USER_NAME && \
-    echo "$USER_NAME:$USER_NAME" | chpasswd && \
-    echo "$USER_NAME ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/$USER_NAME && \
-    chmod 0440 /etc/sudoers.d/$USER_NAME
+    useradd -m -u $USER_UID -g $USER_GID -s /bin/bash $USER_NAME \
+    && echo "$USER_NAME ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/$USER_NAME \
+    && chmod 0440 /etc/sudoers.d/$USER_NAME
 
 WORKDIR $USER_HOME
 

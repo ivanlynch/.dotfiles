@@ -26,21 +26,11 @@ file_exists() {
 # --- Funciones principales ---
 
 prepare_persistent_directories() {
-    # Crear directorio principal y subdirectorios necesarios
+    # Crear directorios base
     mkdir -p "$CACHE_DIR" "$DISK_DIR/home"
     
-    # Establecer permisos adecuados
-    chmod 755 "$DISK_DIR"
-    chmod 700 "$CACHE_DIR" "$DISK_DIR/home"
-    
-    # Crear estructura básica de directorios en el home persistente para Fish Shell
-    mkdir -p "$DISK_DIR/home/.config/fish" "$DISK_DIR/home/.local/share/fish"
-    
-    # Asegurar permisos correctos para los directorios de Fish
-    chmod 700 "$DISK_DIR/home/.config" "$DISK_DIR/home/.local"
-    chmod 700 "$DISK_DIR/home/.config/fish" "$DISK_DIR/home/.local/share/fish"
-    
-    echo "Directorios persistentes preparados correctamente"
+    # Establecer ownership del host (no usar chmod/chown aquí)
+    echo "Directorios persistentes preparados (permisos manejados por UID/GID del host)"
 }
 
 get_current_commit() {
@@ -124,7 +114,7 @@ check_build_requirements() {
 
 build_docker_image() {
     echo "Construyendo imagen Docker ($IMAGE_NAME)..."
-    docker build . -f Dockerfile -t $IMAGE_NAME || return 1
+    docker build --build-arg USER_UID=1000 --build-arg USER_GID=1000 -t $IMAGE_NAME . || return 1
 }
 
 run_docker_container() {
