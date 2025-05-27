@@ -3,8 +3,9 @@ FROM --platform=$BUILDPLATFORM ubuntu:latest
 
 # --- Variables de entorno ---
 ENV DEBIAN_FRONTEND=noninteractive
-ARG USER_UID=1000  # Debe coincidir con tu UID en el host
-ARG USER_GID=1000  # Debe coincidir con tu GID en el host
+ARG USER_UID=1000  # Reemplaza con tu UID real (id -u)
+ARG USER_GID=1000  # Reemplaza con tu GID real (id -g)
+ARG USER_NAME=ivanlynch  # Nombre deseado para el usuario en el contenedor
 
 # --- Instalar dependencias ---
 RUN apt-get update && apt-get install -y \
@@ -29,25 +30,24 @@ ENV LANG="en_US.UTF-8"
 ENV LANGUAGE="en_US:en"
 ENV LC_ALL="en_US.UTF-8"
 
-# --- Usar usuario existente (ubuntu) y ajustar UID/GID ---
-RUN usermod -u $USER_UID ubuntu \
-    && groupmod -g $USER_GID ubuntu \
-    && chown -R $USER_UID:$USER_GID /home/ubuntu \
-    && echo "ubuntu ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/ubuntu \
-    && chmod 0440 /etc/sudoers.d/ubuntu
+# Crear usuario con UID/GID específicos
+RUN groupadd -g $USER_GID $USER_NAME && \
+    useradd -m -u $USER_UID -g $USER_GID -s /bin/bash $USER_NAME && \
+    echo "$USER_NAME ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/$USER_NAME && \
+    chmod 0440 /etc/sudoers.d/$USER_NAME
 
-USER ubuntu
-WORKDIR /home/ubuntu
+USER $USER_NAME
+WORKDIR /home/$USER_NAME
 
 # --- Copiar archivos de configuración ---
-COPY --chown=ubuntu:ubuntu .config/fish /home/ubuntu/.config/fish/
-COPY --chown=ubuntu:ubuntu .config/nvim /home/ubuntu/.config/nvim/
-COPY --chown=ubuntu:ubuntu ansible /home/ubuntu/ansible/
-COPY --chown=ubuntu:ubuntu bootstrap.yml /home/ubuntu/
+COPY --chown=$USER_NAME:$USER_NAME .config/fish /home/$USER_NAME/.config/fish/
+COPY --chown=$USER_NAME:$USER_NAME .config/nvim /home/$USER_NAME/.config/nvim/
+COPY --chown=$USER_NAME:$USER_NAME ansible /home/$USER_NAME/ansible/
+COPY --chown=$USER_NAME:$USER_NAME bootstrap.yml /home/$USER_NAME/
 
 # --- Ejecutar Ansible ---
 RUN ansible-playbook -i localhost, -c local bootstrap.yml \
-    -e "user_name=ubuntu" \
-    -e "user_home=/home/ubuntu"
+    -e "user_name=$USER_NAME" \
+    -e "user_home=/home/$USER_NAME"
 
 CMD ["/usr/bin/fish"]

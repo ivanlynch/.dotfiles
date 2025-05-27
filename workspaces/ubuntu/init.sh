@@ -115,16 +115,16 @@ build_docker_image() {
     docker build --build-arg USER_UID=$(id -u) --build-arg USER_GID=$(id -g) -t $IMAGE_NAME . || return 1
 }
 
+# En la función run_docker_container() de init.sh:
 run_docker_container() {
     echo "Ejecutando contenedor con home persistente..." >&2
     docker run --rm -it \
-        -v "$DISK_DIR/config:/home/ubuntu/.config" \
-        -e USER="ubuntu" \
-        -e HOME="/home/ubuntu" \
-        -e XDG_CONFIG_HOME="/home/ubuntu/.config" \
-        -e XDG_DATA_HOME="/home/ubuntu/.local/share" \
-        -u "ubuntu" \
-        "$IMAGE_NAME"
+    -v "$DISK_DIR/cache:/home/$USER_NAME/cache" \
+    -v "$DISK_DIR/config:/home/$USER_NAME/.config" \
+    -e USER="$USER_NAME" \
+    -e HOME="/home/$USER_NAME" \
+    -u "$(id -u):$(id -g)" \
+    "$IMAGE_NAME"
 }
 
 
