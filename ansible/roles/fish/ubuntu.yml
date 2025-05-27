@@ -22,7 +22,7 @@
 - name: Fish | Asegurar que fish está en /etc/shells (Ubuntu)
   ansible.builtin.lineinfile:
     path: /etc/shells
-    line: /usr/bin/fish # Verificar con 'which fish' en el target si es diferente
+    line: /usr/bin/fish
     state: present
     create: yes
   when: ansible_distribution == "Ubuntu"
@@ -39,16 +39,16 @@
   ansible.builtin.file:
     path: "{{ user_home }}/.config/fish/{{ item }}"
     state: directory
-    owner: "{{ user_name }}" # Asegurar propietario correcto
-    group: "{{ user_name }}" # Asegurar grupo correcto
+    owner: "{{ user_name }}"
+    group: "{{ user_name }}"
     mode: "0755"
   loop:
-    - "" # Para .config/fish
+    - ""
     - "conf.d"
     - "completions"
     - "functions"
   when: ansible_distribution == "Ubuntu"
-  become: true # Necesario para owner/group si el directorio padre no es del usuario
+  become: true
 
 - name: Fish | Añadir ~/.local/bin al PATH de fish (vía conf.d) (Ubuntu)
   ansible.builtin.copy:

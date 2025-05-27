@@ -16,9 +16,17 @@
   tasks:
     - name: Incluir tareas de Nerd Fonts
       ansible.builtin.import_tasks: ansible/roles/nerdfonts/main.yml
-
+    
     - name: Incluir tareas de Neovim
       ansible.builtin.import_tasks: ansible/roles/neovim/main.yml
 
     - name: Incluir tareas de Fish
       ansible.builtin.import_tasks: ansible/roles/fish/main.yml
+    
+    - name: List .config directory
+      ansible.builtin.shell: ls -la {{ user_home }}/.config
+      register: config_dir_list
+
+    - name: Mostrar salida
+      debug:
+        msg: "{{ config_dir_list.stdout_lines | join('\n') }}"
