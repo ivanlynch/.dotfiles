@@ -26,7 +26,7 @@ file_exists() {
 
 prepare_persistent_directories() {
     # Crear directorios base
-    mkdir -p "$DISK_DIR" "$DISK_DIR/home"
+    mkdir -p "$DISK_DIR"
     
     # Establecer ownership del host (no usar chmod/chown aquí)
     echo "Directorios persistentes preparados (permisos manejados por UID/GID del host)"
@@ -95,9 +95,6 @@ prepare_build_context() {
     # Crear directorio nvim aunque esté vacío para evitar errores en Docker build
     if directory_exists "$HOME/.config/nvim"; then
         cp -rf "$HOME/.config/nvim" ./.config/
-    else
-        echo "El directorio $HOME/.config/nvim no existe, creando vacío para el build..."
-        mkdir -p ./.config/nvim
     fi
 }
 
