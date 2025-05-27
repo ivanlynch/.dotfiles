@@ -118,7 +118,7 @@ build_docker_image() {
 run_docker_container() {
     echo "Ejecutando contenedor con home persistente..." >&2
     docker run --rm -it \
-        -v "$DISK_DIR:/home/ubuntu" \
+        -v "$DISK_DIR/config:/home/ubuntu/.config" \
         -e USER="ubuntu" \
         -e HOME="/home/ubuntu" \
         -e XDG_CONFIG_HOME="/home/ubuntu/.config" \
@@ -126,6 +126,7 @@ run_docker_container() {
         -u "ubuntu" \
         "$IMAGE_NAME"
 }
+
 
 # --- Función principal ---
 
