@@ -120,7 +120,7 @@ build_docker_image() {
 run_docker_container() {
     echo "Ejecutando contenedor con home persistente..." >&2
     docker run --rm -it \
-        -v "$DISK_DIR/home:/home/ubuntu" \  # Montar sobre el home del usuario existente
+        -v "$DISK_DIR/home:/home/ubuntu" \
         -v "$CACHE_DIR:/home/ubuntu/cache" \
         -e USER="ubuntu" \
         -e HOME="/home/ubuntu" \
