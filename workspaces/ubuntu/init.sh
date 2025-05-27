@@ -94,8 +94,6 @@ build_docker_image() {
     echo "Construyendo imagen Docker ($IMAGE_NAME)..."
     echo "Usando UID: $USER_UID, GID: $USER_GID, Usuario: $USER_NAME"
 
-    echo "$(ls -la .config)"
-
     docker build \
         --build-arg USER_UID="$USER_UID" \
         --no-cache \
