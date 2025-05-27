@@ -33,8 +33,14 @@ prepare_persistent_directories() {
     chmod 755 "$DISK_DIR"
     chmod 700 "$CACHE_DIR" "$DISK_DIR/home"
     
-    # Crear estructura básica de directorios en el home persistente
-    mkdir -p "$DISK_DIR/home/.config/fish"
+    # Crear estructura básica de directorios en el home persistente para Fish Shell
+    mkdir -p "$DISK_DIR/home/.config/fish" "$DISK_DIR/home/.local/share/fish"
+    
+    # Asegurar permisos correctos para los directorios de Fish
+    chmod 700 "$DISK_DIR/home/.config" "$DISK_DIR/home/.local"
+    chmod 700 "$DISK_DIR/home/.config/fish" "$DISK_DIR/home/.local/share/fish"
+    
+    echo "Directorios persistentes preparados correctamente"
 }
 
 get_current_commit() {
@@ -70,7 +76,6 @@ prepare_cache_directory() {
 save_commit_to_temp() {
     local commit="$1"
     [[ -z "$commit" ]] && return 1
-
     echo "Guardando nuevo commit: $commit en $TEMP_COMMIT_FILE" >&2
     mkdir -p "$(dirname "$TEMP_COMMIT_FILE")"
     echo "$commit" > "$TEMP_COMMIT_FILE"
@@ -79,7 +84,6 @@ save_commit_to_temp() {
 
 copy_commit_to_cache() {
     [[ ! -f "$TEMP_COMMIT_FILE" ]] && return 1
-
     echo "Copiando archivo de commit temporal al directorio de caché..." >&2
     mkdir -p "$(dirname "$LAST_PROCESSED_COMMIT_FILE")"
     cp -f "$TEMP_COMMIT_FILE" "$LAST_PROCESSED_COMMIT_FILE"
@@ -99,8 +103,12 @@ prepare_build_context() {
         cp -rf "$HOME/.config/fish" ./.config/
     fi
 
+    # Crear directorio nvim aunque esté vacío para evitar errores en Docker build
     if directory_exists "$HOME/.config/nvim"; then
         cp -rf "$HOME/.config/nvim" ./.config/
+    else
+        echo "El directorio $HOME/.config/nvim no existe, creando vacío para el build..."
+        mkdir -p ./.config/nvim
     fi
 }
 
@@ -126,6 +134,8 @@ run_docker_container() {
         -v "$CACHE_DIR:$CONTAINER_USER_HOME/cache" \
         -e USER="$USER" \
         -e HOME="$CONTAINER_USER_HOME" \
+        -e XDG_CONFIG_HOME="$CONTAINER_USER_HOME/.config" \
+        -e XDG_DATA_HOME="$CONTAINER_USER_HOME/.local/share" \
         -u "$USER" \
         "$IMAGE_NAME"
 }
@@ -142,7 +152,7 @@ main() {
     # Gestión de commits
     local current_commit=$(get_current_commit)
     local previous_commit=$(get_previous_commit)
-    
+
     echo "Commit actual: ${current_commit:-N/A}"
     echo "Commit anterior: ${previous_commit:-N/A}"
 
