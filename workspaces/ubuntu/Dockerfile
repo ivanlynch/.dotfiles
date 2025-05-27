@@ -1,11 +1,14 @@
+# syntax=docker/dockerfile:1.4
 ARG TARGETPLATFORM
+
 FROM --platform=$BUILDPLATFORM ubuntu:latest
 
 # --- Variables de entorno ---
 ENV DEBIAN_FRONTEND=noninteractive
-ARG USER_UID=1000  # Reemplaza con tu UID real (id -u)
-ARG USER_GID=1000  # Reemplaza con tu GID real (id -g)
-ARG USER_NAME=ivanlynch  # Nombre deseado para el usuario en el contenedor
+
+ARG USER_UID
+ARG USER_GID
+ARG USER_NAME
 
 # --- Instalar dependencias ---
 RUN apt-get update && apt-get install -y \
@@ -30,7 +33,7 @@ ENV LANG="en_US.UTF-8"
 ENV LANGUAGE="en_US:en"
 ENV LC_ALL="en_US.UTF-8"
 
-# Crear usuario con UID/GID específicos
+# --- Crear usuario con UID/GID específicos ---
 RUN groupadd -g $USER_GID $USER_NAME && \
     useradd -m -u $USER_UID -g $USER_GID -s /bin/bash $USER_NAME && \
     echo "$USER_NAME ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/$USER_NAME && \
