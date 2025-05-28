@@ -12,7 +12,9 @@ RUN apk update && \
     bat ripgrep starship \
     tmux bash ncurses \
     docker py3-pip \
-    su-exec shadow
+    su-exec shadow \
+    gcc g++ make libc-dev \
+    build-base
 
 # Crear un usuario no-root
 RUN adduser -s /usr/bin/fish -D $USER
