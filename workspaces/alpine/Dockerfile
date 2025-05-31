@@ -14,11 +14,17 @@ RUN apk update && \
     docker py3-pip \
     su-exec shadow \
     gcc g++ make libc-dev \
-    build-base
+    build-base \
+    coreutils curl git \
+    unzip gnupg xz
 
 # Crear un usuario no-root
 RUN adduser -s /usr/bin/fish -D $USER
 ENV HOME=/home/$USER
+
+# Instalar asdf-vm
+RUN git clone https://github.com/asdf-vm/asdf.git /home/$USER/.asdf --branch v0.13.1 && \
+    chown -R $USER:$USER /home/$USER/.asdf
 
 # Configurar entorno de desarrollo
 COPY .config/fish /home/$USER/.config/fish
