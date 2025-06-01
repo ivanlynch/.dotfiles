@@ -65,5 +65,6 @@ docker run -it --rm \
     -e USER_NAME="$(whoami)" \
     -e GIT_USER_NAME="$GIT_USER_NAME" \
     -e GIT_USER_EMAIL="$GIT_USER_EMAIL" \
+    -p 3000:3000 \
     -v "$HOME/.ssh:/home/$(whoami)/.ssh" \
     "$IMAGE_NAME:$TAG"
