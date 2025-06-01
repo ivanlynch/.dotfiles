@@ -22,7 +22,7 @@ elif [ -d ".config/fish" ]; then
     echo "🐟 Fish config ya existe en el directorio local"
 fi
 
-# Copiar nvim config si no existe o es diferente  
+# Copiar nvim config si no existe o es diferente
 if [ ! -d ".config/nvim" ] && [ -d "$HOME/.config/nvim" ]; then
     cp -r "$HOME/.config/nvim" .config/
     echo "📝 Configuración de Neovim copiada"
@@ -38,10 +38,18 @@ docker build \
     --build-arg USER_NAME=$(whoami) \
     -t "$IMAGE_NAME:$TAG" .
 
-docker push "$IMAGE_NAME:$TAG"
-
 if [ $? -eq 0 ]; then
     echo "✅ Imagen construida exitosamente"
+    
+    # Solo hacer push si la construcción fue exitosa
+    echo "📤 Subiendo imagen a Docker Hub..."
+    docker push "$IMAGE_NAME:$TAG"
+    
+    if [ $? -eq 0 ]; then
+        echo "✅ Imagen subida exitosamente"
+    else
+        echo "⚠️  Error subiendo la imagen, pero continuando..."
+    fi
 else
     echo "❌ Error construyendo la imagen"
     exit 1
@@ -55,9 +63,12 @@ GIT_USER_EMAIL="$(git config --get user.email)"
 # Directorio de proyecto (puedes modificarlo según tus necesidades)
 WORKSPACE_DIR="$PWD"
 
-# Ejecutar el contenedor
+# Ejecutar el contenedor con nombre específico para facilitar conexiones múltiples
 echo "🚀 Iniciando contenedor..."
+echo "💡 Para conectar terminales adicionales, usa: docker exec -it alpine-dev fish"
 docker run -it --rm \
+    --name $IMAGE_NAME \
+    -p 3000:3000 \
     -v "$WORKSPACE_DIR:/workspace" \
     -v /var/run/docker.sock:/var/run/docker.sock \
     -e HOST_USER_ID="$(id -u)" \
@@ -65,6 +76,5 @@ docker run -it --rm \
     -e USER_NAME="$(whoami)" \
     -e GIT_USER_NAME="$GIT_USER_NAME" \
     -e GIT_USER_EMAIL="$GIT_USER_EMAIL" \
-    -p 3000:3000 \
     -v "$HOME/.ssh:/home/$(whoami)/.ssh" \
     "$IMAGE_NAME:$TAG"
