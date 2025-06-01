@@ -1,5 +1,6 @@
 IMAGE_NAME="ivanlynch/alpine-development-environment"
 TAG="latest"
+CONTAINER_NAME="alpine-dev"
 
 echo "🐳 Iniciando configuración de Alpine Development Environment..."
 
@@ -30,7 +31,24 @@ elif [ -d ".config/nvim" ]; then
     echo "📝 Nvim config ya existe en el directorio local"
 fi
 
-# Construir la imagen
+# Verificar si el contenedor ya existe
+if docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
+    echo "📦 Contenedor $CONTAINER_NAME ya existe"
+    
+    # Verificar si está corriendo
+    if docker ps --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
+        echo "🔄 Contenedor ya está corriendo. Conectándose..."
+        echo "💡 Para conectar terminales adicionales, usa: docker exec -it $CONTAINER_NAME fish"
+        docker exec -it "$CONTAINER_NAME" fish
+        exit 0
+    else
+        echo "🚀 Iniciando contenedor existente..."
+        docker start -ai "$CONTAINER_NAME"
+        exit 0
+    fi
+fi
+
+# Construir la imagen solo si el contenedor no existe
 echo "🔨 Construyendo imagen Docker..."
 docker build \
     --build-arg USER_UID=$(id -u) \
@@ -63,12 +81,15 @@ GIT_USER_EMAIL="$(git config --get user.email)"
 # Directorio de proyecto (puedes modificarlo según tus necesidades)
 WORKSPACE_DIR="$PWD"
 
-# Ejecutar el contenedor con nombre específico para facilitar conexiones múltiples
+# Ejecutar el contenedor con nombre válido
 echo "🚀 Iniciando contenedor..."
-echo "💡 Para conectar terminales adicionales, usa: docker exec -it alpine-dev fish"
+echo "💡 Para conectar terminales adicionales, usa: docker exec -it $CONTAINER_NAME fish"
 docker run -it --rm \
-    --name $IMAGE_NAME \
+    --name "$CONTAINER_NAME" \
     -p 3000:3000 \
+    -p 8080:8080 \
+    -p 5173:5173 \
+    -p 4200:4200 \
     -v "$WORKSPACE_DIR:/workspace" \
     -v /var/run/docker.sock:/var/run/docker.sock \
     -e HOST_USER_ID="$(id -u)" \

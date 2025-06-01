@@ -187,6 +187,7 @@ if status is-interactive
 	alias dc="dotfiles commit -m"
 	alias dp="dotfiles push"
 	alias dl="dotfiles log --oneline --graph --decorate --all"
+	alias dca="dotfiles commit --amend --no-edit && dotfiles push -f"
     end
 
 end # Fin de 'if status is-interactive'
