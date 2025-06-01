@@ -2,29 +2,35 @@ FROM alpine:latest
 
 ARG USER=ivanlynch
 
-# Instalar paquetes básicos
+# Actualizar el SO
 RUN apk update
+
+# Instalar dependencias básicas
 RUN apk add --no-cache \
-    neovim \
-    git \
-    git-perl \
-    fish \
     openssh-client \
     curl \
     less \
+    ripgrep \
+    ncurses \
+    su-exec \
+    shadow \
+    gcc \
+    g++ \
+    make \
+    cmake \
+    musl-dev \
+    linux-headers
+
+# Instalar herramientas de terminal
+RUN apk add --no-cache \
+    neovim \
+    git \
+    fish \
     fzf \
     zoxide \
     bat \
     eza \
-    ripgrep \
     starship \
-    bash \
-    ncurses \
-    docker \
-    py3-pip \
-    su-exec \
-    shadow \
-    nodejs
 
 # Crear un usuario no-root
 RUN adduser -s /usr/bin/fish -D $USER
@@ -33,6 +39,9 @@ ENV HOME=/home/$USER
 # Configurar entorno de desarrollo
 COPY .config/fish /home/$USER/.config/fish
 COPY .config/nvim /home/$USER/.config/nvim
+
+# Actualizar e instalar dependencias de Neovim
+RUN nvim --headless "+Lazy! sync" +qa
 
 # Script de entrada para manejar permisos
 COPY entrypoint.sh /bin/entrypoint.sh

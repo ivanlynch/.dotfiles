@@ -165,6 +165,22 @@ if status is-interactive
         alias cd="z"
     end
 
+    # Git aliases
+    if type -q git
+        alias g="git"
+        alias ga="git add"
+        alias gaa="git add --all"
+        alias gb="git branch"
+        alias gco="git checkout"
+        alias gcm="git commit -m"
+        alias gca="git commit --amend"
+        alias gd="git diff"
+        alias gl="git log --oneline --graph --decorate --all"
+        alias gp="git push"
+        alias gpl="git pull"
+        alias gs="git status"
+    end
+
 end # Fin de 'if status is-interactive'
 
 # ------------------------------------------------------------
