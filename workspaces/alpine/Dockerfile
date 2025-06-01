@@ -56,7 +56,7 @@ RUN mkdir -p $NVM_DIR && \
 ENV PATH=$NVM_DIR/versions/node/v*/bin:$PATH
 
 # Instalar la versión LTS más reciente de Node.js usando NVM
-RUN bash -c "source $NVM_DIR/nvm.sh && nvm install --lts && nvm use --lts && nvm alias default lts/*"
+RUN bash -c "source $NVM_DIR/nvm.sh && nvm install --lts"
 
 # Configurar entorno de desarrollo
 COPY .config/fish /home/$USER/.config/fish
