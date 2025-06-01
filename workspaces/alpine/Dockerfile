@@ -45,6 +45,9 @@ COPY .config/nvim /home/$USER/.config/nvim
 # Actualizar e instalar dependencias de Neovim
 RUN nvim --headless "+Lazy! sync" +qa
 
+# Instalar prettier y prettierd en Mason
+RUN nvim --headless -c "MasonInstall prettier prettierd" -c "qa"
+
 # Script de entrada para manejar permisos
 COPY entrypoint.sh /bin/entrypoint.sh
 RUN chmod +x /bin/entrypoint.sh
