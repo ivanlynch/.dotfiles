@@ -45,9 +45,6 @@ COPY .config/nvim /home/$USER/.config/nvim
 # Actualizar e instalar dependencias de Neovim
 RUN nvim --headless "+Lazy! sync" +qa
 
-# Instalar NodeJS Lts
-RUN nvm install --lts
-
 # Script de entrada para manejar permisos
 COPY entrypoint.sh /bin/entrypoint.sh
 RUN chmod +x /bin/entrypoint.sh
