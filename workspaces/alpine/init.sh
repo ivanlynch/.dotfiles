@@ -1,4 +1,5 @@
-IMAGE_NAME="alpine-development-environment"
+IMAGE_NAME="ivanlynch/alpine-development-environment"
+TAG="latest"
 
 echo "🐳 Iniciando configuración de Alpine Development Environment..."
 
@@ -33,11 +34,11 @@ fi
 echo "🔨 Construyendo imagen Docker..."
 docker build \
     --build-arg USER_UID=$(id -u) \
-    --build-/arg USER_GID=$(id -g) \
+    --build-arg USER_GID=$(id -g) \
     --build-arg USER_NAME=$(whoami) \
-    -t "$IMAGE_NAME" .
+    -t "$IMAGE_NAME:$TAG" .
 
-docker push ivanlynch/$IMAGE_NAME
+docker push "$IMAGE_NAME:$TAG"
 
 if [ $? -eq 0 ]; then
     echo "✅ Imagen construida exitosamente"
@@ -65,5 +66,4 @@ docker run -it --rm \
     -e GIT_USER_NAME="$GIT_USER_NAME" \
     -e GIT_USER_EMAIL="$GIT_USER_EMAIL" \
     -v "$HOME/.ssh:/home/$(whoami)/.ssh" \
-    "$IMAGE_NAME"
-
+    "$IMAGE_NAME:$TAG"
