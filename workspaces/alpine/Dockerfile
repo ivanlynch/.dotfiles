@@ -30,7 +30,7 @@ RUN apk add --no-cache \
     zoxide \
     bat \
     eza \
-    starship \
+    starship
 
 # Crear un usuario no-root
 RUN adduser -s /usr/bin/fish -D $USER
