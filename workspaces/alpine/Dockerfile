@@ -3,16 +3,27 @@ FROM alpine:latest
 ARG USER=ivanlynch
 
 # Instalar paquetes básicos
-RUN apk update && \
-    apk add --no-cache \
-    neovim git git-perl \
-    fish openssh-client \
-    curl less \
-    fzf zoxide \
-    bat ripgrep starship \
-    tmux bash ncurses \
-    docker py3-pip \
-    su-exec shadow \
+RUN apk update
+RUN apk add --no-cache \
+    neovim \
+    git \
+    git-perl \
+    fish \
+    openssh-client \
+    curl \
+    less \
+    fzf \
+    zoxide \
+    bat \
+    eza \
+    ripgrep \
+    starship \
+    bash \
+    ncurses \
+    docker \
+    py3-pip \
+    su-exec \
+    shadow \
     nodejs
 
 # Crear un usuario no-root
@@ -33,4 +44,3 @@ WORKDIR /workspace
 # Entrypoint por defecto (puede ser sobrescrito)
 ENTRYPOINT ["/bin/entrypoint.sh"]
 CMD []
-
