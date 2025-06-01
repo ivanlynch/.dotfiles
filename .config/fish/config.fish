@@ -181,6 +181,12 @@ if status is-interactive
         alias gs="git status"
     end
 
+    if type -q dotfiles
+	alias ds="dotfiles status"
+	alias da="dotfiles add -f"
+	alias dc="dotfiles commit -m"
+    end
+
 end # Fin de 'if status is-interactive'
 
 # ------------------------------------------------------------
