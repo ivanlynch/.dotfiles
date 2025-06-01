@@ -30,7 +30,8 @@ RUN apk add --no-cache \
     zoxide \
     bat \
     eza \
-    starship
+    starship \
+    nvm
 
 # Crear un usuario no-root
 RUN adduser -s /usr/bin/fish -D $USER
@@ -42,6 +43,9 @@ COPY .config/nvim /home/$USER/.config/nvim
 
 # Actualizar e instalar dependencias de Neovim
 RUN nvim --headless "+Lazy! sync" +qa
+
+# Instalar NodeJS Lts
+RUN nvm install --lts
 
 # Script de entrada para manejar permisos
 COPY entrypoint.sh /bin/entrypoint.sh
