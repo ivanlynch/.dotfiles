@@ -1,6 +1,3 @@
-# ~/.config/fish/config.fish
-# (Copiado por Ansible desde la máquina controladora)
-
 # ------------------------------------------------------------
 # Configuración del PATH de Homebrew (MUY IMPORTANTE: DEBE IR PRIMERO)
 # ------------------------------------------------------------
@@ -169,3 +166,11 @@ if status is-interactive
     end
 
 end # Fin de 'if status is-interactive'
+
+# ------------------------------------------------------------
+# Funciones personalizadas
+# ------------------------------------------------------------
+
+function alpine
+    bash /home/ivanlynch/workspaces/alpine/init.sh
+end
