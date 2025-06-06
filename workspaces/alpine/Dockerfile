@@ -24,6 +24,7 @@ RUN apk add --no-cache \
 # Instalar herramientas de terminal
 RUN apk add --no-cache \
     neovim \
+    neovim-doc \
     git \
     fish \
     fzf \
@@ -40,13 +41,18 @@ ENV HOME=/home/$USER
 
 # Configurar entorno de desarrollo
 COPY .config/fish /home/$USER/.config/fish
-# COPY .config/nvim /home/$USER/.config/nvim
+COPY .config/nvim /home/$USER/.config/nvim
 
 # Actualizar e instalar dependencias de Neovim
 # RUN nvim --headless "+Lazy! sync" +qa
 
 # Instalar prettier y prettierd en Mason
 # RUN nvim --headless -c "MasonInstall prettier prettierd" -c "qa"
+
+# LSPs
+RUN npm install -g vscode-langservers-extracted
+RUN npm install -g typescript-language-server
+RUN npm install -g vscode-markdown-languageserver
 
 # Script de entrada para manejar permisos
 COPY entrypoint.sh /bin/entrypoint.sh
