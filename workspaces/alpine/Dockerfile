@@ -40,13 +40,13 @@ ENV HOME=/home/$USER
 
 # Configurar entorno de desarrollo
 COPY .config/fish /home/$USER/.config/fish
-COPY .config/nvim /home/$USER/.config/nvim
+# COPY .config/nvim /home/$USER/.config/nvim
 
 # Actualizar e instalar dependencias de Neovim
-RUN nvim --headless "+Lazy! sync" +qa
+# RUN nvim --headless "+Lazy! sync" +qa
 
 # Instalar prettier y prettierd en Mason
-RUN nvim --headless -c "MasonInstall prettier prettierd" -c "qa"
+# RUN nvim --headless -c "MasonInstall prettier prettierd" -c "qa"
 
 # Script de entrada para manejar permisos
 COPY entrypoint.sh /bin/entrypoint.sh
