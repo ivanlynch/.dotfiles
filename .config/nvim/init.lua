@@ -39,14 +39,12 @@ vim.lsp.config['ts'] = {
 }
 
 vim.lsp.config['markdown'] = {
-  cmd = { 'vscode-markdown-languageserver', '--stdio' },
+  cmd = { 'vscode-markdown-language-server', '--stdio' },
   filetypes = { 'markdown' },
   root_markers = { 'package.json', '.git' },
   settings = {
     markdown = {
-      format = {
-        enable = true,
-      }
+      requireConfig = false 
     }
   }
 }

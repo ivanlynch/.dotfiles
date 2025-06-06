@@ -23,8 +23,6 @@ RUN apk add --no-cache \
 
 # Instalar herramientas de terminal
 RUN apk add --no-cache \
-    neovim \
-    neovim-doc \
     git \
     fish \
     fzf \
@@ -34,6 +32,13 @@ RUN apk add --no-cache \
     starship \
     nodejs-current \
     npm
+
+# Instalar Neovim
+RUN apk add --no-cache \
+    neovim \
+    neovim-doc \
+    tree-sitter \
+    tree-sitter-dev
 
 # Crear un usuario no-root
 RUN adduser -s /usr/bin/fish -D $USER
@@ -52,7 +57,7 @@ COPY .config/nvim /home/$USER/.config/nvim
 # LSPs
 RUN npm install -g vscode-langservers-extracted
 RUN npm install -g typescript-language-server
-RUN npm install -g vscode-markdown-languageserver
+RUN npm install -g vscode-markdown-languageserver 
 
 # Script de entrada para manejar permisos
 COPY entrypoint.sh /bin/entrypoint.sh
