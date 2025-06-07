@@ -9,27 +9,17 @@ cd "$(dirname "$0")"
 echo "📁 Directorio de trabajo: $(pwd)"
 
 # Copiar archivos de configuración solo si no existen localmente
-echo "⚙️  Verificando archivos de configuración..."
-if [ ! -d ".config" ]; then
-    mkdir -p .config
-    echo "📂 Directorio .config creado"
-fi
+echo "⚙️  Preparando archivos de configuración..."
+rm -rf .config
+mkdir -p .config
 
-# Copiar fish config si no existe o es diferente
-if [ ! -d ".config/fish" ] && [ -d "$HOME/.config/fish" ]; then
-    cp -r "$HOME/.config/fish" .config/
-    echo "🐟 Configuración de Fish copiada"
-elif [ -d ".config/fish" ]; then
-    echo "🐟 Fish config ya existe en el directorio local"
-fi
+# Copiar fish config
+cp -r "$HOME/.config/fish" .config/
+echo "🐟 Configuración de Fish copiada"
 
-# Copiar nvim config si no existe o es diferente
-if [ ! -d ".config/nvim" ] && [ -d "$HOME/.config/nvim" ]; then
-    cp -r "$HOME/.config/nvim" .config/
-    echo "📝 Configuración de Neovim copiada"
-elif [ -d ".config/nvim" ]; then
-    echo "📝 Nvim config ya existe en el directorio local"
-fi
+# Copiar neovim config
+cp -r "$HOME/.config/nvim" .config/
+echo "📝 Configuración de Neovim copiada"
 
 # Verificar si el contenedor ya existe
 if docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
@@ -51,6 +41,7 @@ fi
 # Construir la imagen solo si el contenedor no existe
 echo "🔨 Construyendo imagen Docker..."
 docker build \
+    --build-arg CACHEBUST=$(date +%s) \
     --build-arg USER_UID=$(id -u) \
     --build-arg USER_GID=$(id -g) \
     --build-arg USER_NAME=$(whoami) \

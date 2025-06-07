@@ -7,6 +7,10 @@ return {
       format = {
         enable = true
       },
+      validate = {
+        scripts = true,
+        styles = true
+      },
       hover = {
         documentation = true,
         references = true

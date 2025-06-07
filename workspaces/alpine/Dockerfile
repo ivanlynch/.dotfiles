@@ -45,6 +45,7 @@ RUN adduser -s /usr/bin/fish -D $USER
 ENV HOME=/home/$USER
 
 # Configurar entorno de desarrollo
+ARG CACHEBUST=1
 COPY .config/fish /home/$USER/.config/fish
 COPY .config/nvim /home/$USER/.config/nvim
 
@@ -56,8 +57,8 @@ COPY .config/nvim /home/$USER/.config/nvim
 
 # LSPs
 RUN npm install -g vscode-langservers-extracted
-RUN npm install -g typescript-language-server
-RUN npm install -g vscode-markdown-languageserver 
+RUN npm install -g typescript-language-server typescript
+RUN npm install -g vscode-markdown-languageserver
 
 # Script de entrada para manejar permisos
 COPY entrypoint.sh /bin/entrypoint.sh

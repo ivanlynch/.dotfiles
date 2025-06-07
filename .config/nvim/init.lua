@@ -1,55 +1,24 @@
-vim.lsp.config['html'] = {
-  cmd = { 'vscode-html-language-server', '--stdio' },
-  filetypes = { 'html' },
-  root_markers = { 'package.json', '.git' },
-  settings = {
-    html = {
-      format = {
-        enable = true,
-      }
-    }
-  }
-}
-
-vim.lsp.config['css'] = {
-  cmd = { 'vscode-css-language-server', '--stdio' },
-  filetypes = { 'css' },
-  root_markers = { 'package.json', '.git' },
-  settings = {
-    css = {
-      format = {
-        enable = true,
-      }
-    }
-  }
-}
-
--- typescript-language-server
-vim.lsp.config['ts'] = {
-  cmd = { 'typescript-language-server', '--stdio' },
-  filetypes = { 'typescript', 'typescriptreact', 'typescript.tsx' },
-  root_markers = { 'package.json', '.git' },
-  settings = {
-    typescript = {
-      format = {
-        enable = true,
-      }
-    }
-  }
-}
-
-vim.lsp.config['markdown'] = {
-  cmd = { 'vscode-markdown-language-server', '--stdio' },
-  filetypes = { 'markdown' },
-  root_markers = { 'package.json', '.git' },
-  settings = {
-    markdown = {
-      requireConfig = false 
-    }
-  }
-}
+vim.opt.swapfile = false
+vim.g.loaded_node_provider = 0
+vim.g.loaded_perl_provider = 0
+vim.g.loaded_python3_provider = 0
+vim.g.loaded_ruby_provider = 0
 
 vim.lsp.enable('html')
 vim.lsp.enable('css')
-vim.lsp.enable('ts')
+vim.lsp.enable('typescript')
 vim.lsp.enable('markdown')
+
+vim.opt.completeopt = { 'menu', 'menuone', 'noinsert', 'noselect' }
+
+vim.api.nvim_create_autocmd('LspAttach', {
+  callback = function(event)
+    local client_id = vim.tbl_get(event, 'data', 'client_id')
+    if client_id then
+      vim.lsp.completion.enable(true, client_id, event.buf, { autotrigger = false })
+    end
+  end
+})
+
+
+require("config.lazy")
