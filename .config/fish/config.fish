@@ -121,8 +121,9 @@ if status is-interactive
     alias dotfiles="command git --git-dir=$HOME/.dotfiles --work-tree=$HOME"
     alias ws="cd ~/workspaces"
     alias an="cd ~/ansible"
-    alias ubuntu="chmod +x ~/workspaces/ubuntu/init.sh && ~/workspaces/ubuntu/init.sh"
     alias alpine="chmod +x ~/workspaces/alpine/init.sh && ~/workspaces/alpine/init.sh"
+	  alias vim="nvim"
+    alias luarocks="luarocks-5.1"
 
     # Alias específicos de macOS
     if test (uname) = "Darwin"
@@ -197,5 +198,5 @@ end # Fin de 'if status is-interactive'
 # ------------------------------------------------------------
 
 function alpine
-    bash /home/ivanlynch/workspaces/alpine/init.sh
+    bash $HOME/workspaces/alpine/init.sh
 end

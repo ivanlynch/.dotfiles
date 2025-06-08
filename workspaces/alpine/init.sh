@@ -24,7 +24,7 @@ echo "📝 Configuración de Neovim copiada"
 # Verificar si el contenedor ya existe
 if docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
     echo "📦 Contenedor $CONTAINER_NAME ya existe"
-    
+   
     # Verificar si está corriendo
     if docker ps --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
         echo "🔄 Contenedor ya está corriendo. Conectándose..."
@@ -42,8 +42,8 @@ fi
 echo "🔨 Construyendo imagen Docker..."
 docker build \
     --build-arg CACHEBUST=$(date +%s) \
-    --build-arg USER_UID=$(id -u) \
-    --build-arg USER_GID=$(id -g) \
+    --build-arg USER_ID=$(id -u) \
+    --build-arg GROUP_ID=$(id -g) \
     --build-arg USER_NAME=$(whoami) \
     -t "$IMAGE_NAME:$TAG" .
 
@@ -70,7 +70,7 @@ GIT_USER_NAME="$(git config --get user.name)"
 GIT_USER_EMAIL="$(git config --get user.email)"
 
 # Directorio de proyecto (puedes modificarlo según tus necesidades)
-WORKSPACE_DIR="$PWD"
+WORKSPACE_DIR="$HOME/workspace"
 
 # Ejecutar el contenedor con nombre válido
 echo "🚀 Iniciando contenedor..."
@@ -78,15 +78,12 @@ echo "💡 Para conectar terminales adicionales, usa: docker exec -it $CONTAINER
 docker run -it --rm \
     --name "$CONTAINER_NAME" \
     -p 3000:3000 \
-    -p 8080:8080 \
-    -p 5173:5173 \
-    -p 4200:4200 \
-    -v "$WORKSPACE_DIR:/workspace" \
     -v /var/run/docker.sock:/var/run/docker.sock \
     -e HOST_USER_ID="$(id -u)" \
     -e HOST_GROUP_ID="$(id -g)" \
     -e USER_NAME="$(whoami)" \
     -e GIT_USER_NAME="$GIT_USER_NAME" \
     -e GIT_USER_EMAIL="$GIT_USER_EMAIL" \
+    -v "$WORKSPACE_DIR:/home/$(whoami)/workspace" \
     -v "$HOME/.ssh:/home/$(whoami)/.ssh" \
     "$IMAGE_NAME:$TAG"

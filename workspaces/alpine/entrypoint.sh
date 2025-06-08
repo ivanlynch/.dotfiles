@@ -6,13 +6,6 @@ if [ ! -z "$GIT_USER_NAME" ] && [ ! -z "$GIT_USER_EMAIL" ]; then
     git config --global user.email "$GIT_USER_EMAIL"
 fi
 
-# Get standard user ID variables
-USER_ID=${HOST_USER_ID:-9001}
-GROUP_ID=${HOST_GROUP_ID:-9001}
-
-# Get username from environment or use default
-USER_NAME=${USER_NAME:-ivanlynch}
-
 # Change user uid to host user's uid
 if [ ! -z "$USER_ID" ] && [ "$(id -u $USER_NAME)" != "$USER_ID" ]; then
     # Create the user group if it does not exist
