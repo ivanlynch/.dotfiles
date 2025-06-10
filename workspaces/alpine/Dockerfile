@@ -31,6 +31,7 @@ openssh-client \
     musl-dev \
     linux-headers \
     python3 \
+    py3-pip \
     py3-isort \
     black \
     nodejs-current \
@@ -71,16 +72,32 @@ RUN npm install -g \
 ARG CONFIG_HASH
 ARG CACHEBUST=1
 
+# Crear directorios de configuración antes de copiar
+RUN mkdir -p $HOME/.config
+
 COPY .config/fish $HOME/.config/fish
 COPY .config/nvim $HOME/.config/nvim
 
 # Cambiar ownership antes de ejecutar como usuario
 RUN chown -R $USER_NAME:users $HOME/.config
 
-# Actualizar e instalar dependencias de Neovim como usuario
+# Configurar luarocks para Neovim como usuario (después de copiar configs)
 USER $USER_NAME
+RUN pip3 install --user hererocks &&
+    mkdir -p ~/.local/share/nvim/lazy-rocks &&
+    cd ~/.local/share/nvim/lazy-rocks &&
+    ~/.local/bin/hererocks hererocks --lua=5.1 --luarocks=latest &&
+    echo 'set -gx PATH "$HOME/.local/share/nvim/lazy-rocks/hererocks/bin" "$HOME/.local/bin" $PATH' >>~/.config/fish/config.fish
+
+# Actualizar e instalar dependencias de Neovim como usuario
 RUN nvim --headless "+Lazy! sync" +qa || true
 USER root
+
+# Asegurar ownership correcto después de todas las configuraciones
+RUN chown -R $USER_NAME:users $HOME/.config $HOME/.local
+
+# Actualizar PATH para incluir hererocks
+ENV PATH="$HOME/.local/share/nvim/lazy-rocks/hererocks/bin:$HOME/.local/bin:$PATH"
 
 # Script de entrada para manejar permisos
 COPY entrypoint.sh /bin/entrypoint.sh

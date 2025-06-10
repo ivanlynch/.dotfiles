@@ -24,5 +24,10 @@ if [ -e /var/run/docker.sock ]; then
     chown $USER_NAME: /var/run/docker.sock
 fi
 
+# Configure luarocks path for Neovim
+if [ -d "/home/$USER_NAME/.local/share/nvim/lazy-rocks/hererocks/bin" ]; then
+    export PATH="/home/$USER_NAME/.local/share/nvim/lazy-rocks/hererocks/bin:/home/$USER_NAME/.local/bin:$PATH"
+fi
+
 # Execute command as user
 exec /sbin/su-exec $USER_NAME fish "$@"
