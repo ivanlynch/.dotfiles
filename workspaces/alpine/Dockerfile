@@ -14,12 +14,10 @@ RUN adduser -s /usr/bin/fish -D $USER_NAME -u $USER_ID -G users -g "User $USER_N
 # Establecer PATH después de HOME
 ENV PATH="${HOME}/.cargo/bin:${PATH}"
 
-# Actualizar el SO
-RUN apk update
-
-# Instalar dependencias básicas
-RUN apk add --no-cache \
-    openssh-client \
+# Actualizar el SO e instalar todas las dependencias en una sola capa para optimizar cache
+RUN apk update && apk add --no-cache
+# Dependencias básicas
+openssh-client \
     curl \
     less \
     ripgrep \
@@ -40,10 +38,8 @@ RUN apk add --no-cache \
     lua5.1 \
     lua5.1-dev \
     luarocks
-
-# Instalar herramientas de terminal
-RUN apk add --no-cache \
-    git \
+# Herramientas de terminal
+git \
     fish \
     fzf \
     zoxide \
@@ -51,32 +47,40 @@ RUN apk add --no-cache \
     eza \
     starship \
     npm
-
-# Instalar Neovim
-RUN apk add --no-cache \
-    neovim \
+# Neovim
+neovim \
     neovim-doc
+# Runtimes
+rust \
+    cargo &&
+    rm -rf /var/cache/apk/*
 
-# Instalar Runtimes
-RUN apk add --no-cache rust cargo
+# Instalar dependencias de desarrollo globales en una sola capa
+RUN npm install -g \
+    vscode-langservers-extracted \
+    typescript-language-server \
+    typescript \
+    vscode-markdown-languageserver \
+    prettier \
+    @fsouza/prettierd &&
+    npm cache clean --force &&
+    cargo install stylua rustfmt &&
+    rm -rf /usr/local/cargo/registry
 
-# Configurar entorno de desarrollo
+# Configurar entorno de desarrollo - hash para invalidar cache cuando configs cambien
+ARG CONFIG_HASH
 ARG CACHEBUST=1
 
 COPY .config/fish $HOME/.config/fish
 COPY .config/nvim $HOME/.config/nvim
 
-# Actualizar e instalar dependencias de Neovim
-RUN nvim --headless "+Lazy! sync" +qa
+# Cambiar ownership antes de ejecutar como usuario
+RUN chown -R $USER_NAME:users $HOME/.config
 
-# LSPs
-RUN npm install -g vscode-langservers-extracted
-RUN npm install -g typescript-language-server typescipt
-RUN npm install -g vscode-markdown-languageserver
-
-# Formatters
-RUN npm install -g prettier @fsouza/prettierd
-RUN cargo install stylua rustfmt
+# Actualizar e instalar dependencias de Neovim como usuario
+USER $USER_NAME
+RUN nvim --headless "+Lazy! sync" +qa || true
+USER root
 
 # Script de entrada para manejar permisos
 COPY entrypoint.sh /bin/entrypoint.sh

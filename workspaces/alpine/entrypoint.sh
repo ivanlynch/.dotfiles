@@ -10,14 +10,14 @@ fi
 if [ ! -z "$USER_ID" ] && [ "$(id -u $USER_NAME)" != "$USER_ID" ]; then
     # Create the user group if it does not exist
     groupadd --non-unique -g "$GROUP_ID" usergroup
-    
+
     # Set the user's uid and gid
     usermod --non-unique --uid "$USER_ID" --gid "$GROUP_ID" $USER_NAME
 fi
 
 # Setting permissions on user's home directory
 # Ignore errors for read-only files/directories (like .ssh)
-chown -R $USER_NAME: /home/$USER_NAME 2>/dev/null || true``
+chown -R $USER_NAME: /home/$USER_NAME 2>/dev/null || true
 
 # Setting permissions on docker.sock if it exists
 if [ -e /var/run/docker.sock ]; then
