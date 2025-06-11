@@ -1,0 +1,60 @@
+[user]
+name = Ivan Lynch
+email = your-email@example.com
+
+[core]
+editor = nvim
+autocrlf = input
+pager = less -F -X
+
+[init]
+defaultBranch = main
+
+[pull]
+rebase = false
+
+[push]
+default = simple
+
+[color]
+ui = auto
+
+[color "branch"]
+current = yellow reverse
+local = yellow
+remote = green
+
+[color "diff"]
+meta = yellow bold
+frag = magenta bold
+old = red bold
+new = green bold
+
+[color "status"]
+added = yellow
+changed = green
+untracked = cyan
+
+[alias]
+st = status
+co = checkout
+br = branch
+ci = commit
+ca = commit --amend
+unstage = reset HEAD --
+last = log -1 HEAD
+visual = !gitk
+
+# Git safe directories for Neovim plugins and development environments
+[safe]
+directory = /home/*/dev
+directory = /home/*/.local/share/nvim/lazy/*
+directory = /home/*/.local/share/nvim/lazy/lazy.nvim
+directory = /home/*/.local/share/nvim/lazy/conform.nvim
+directory = /home/*/.local/share/nvim/lazy/fzf-lua
+directory = /home/*/.local/share/nvim/lazy/nvim-treesitter
+directory = /home/*/.local/share/nvim/lazy/nvim-web-devicons
+directory = /home/*/workspace/*
+directory = /home/*/workspaces/*
+directory = /home/*/.dotfiles
+directory = *
