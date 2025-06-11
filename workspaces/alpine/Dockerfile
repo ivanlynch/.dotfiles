@@ -15,9 +15,8 @@ RUN adduser -s /usr/bin/fish -D $USER_NAME -u $USER_ID -G users -g "User $USER_N
 ENV PATH="${HOME}/.cargo/bin:${PATH}"
 
 # Actualizar el SO e instalar todas las dependencias en una sola capa para optimizar cache
-RUN apk update && apk add --no-cache
-# Dependencias básicas
-openssh-client \
+RUN apk update && apk add --no-cache \
+    openssh-client \
     curl \
     less \
     ripgrep \
@@ -30,6 +29,8 @@ openssh-client \
     cmake \
     musl-dev \
     linux-headers \
+    readline-dev \
+    ncurses-dev \
     python3 \
     py3-pip \
     py3-isort \
@@ -38,21 +39,18 @@ openssh-client \
     xclip \
     lua5.1 \
     lua5.1-dev \
-    luarocks
-# Herramientas de terminal
-git \
+    luarocks \
+    git \
     fish \
     fzf \
     zoxide \
     bat \
     eza \
     starship \
-    npm
-# Neovim
-neovim \
-    neovim-doc
-# Runtimes
-rust \
+    npm \
+    neovim \
+    neovim-doc \
+    rust \
     cargo &&
     rm -rf /var/cache/apk/*
 
@@ -83,7 +81,7 @@ RUN chown -R $USER_NAME:users $HOME/.config
 
 # Configurar luarocks para Neovim como usuario (después de copiar configs)
 USER $USER_NAME
-RUN pip3 install --user hererocks &&
+RUN pip3 install --user --break-system-packages hererocks &&
     mkdir -p ~/.local/share/nvim/lazy-rocks &&
     cd ~/.local/share/nvim/lazy-rocks &&
     ~/.local/bin/hererocks hererocks --lua=5.1 --luarocks=latest &&
