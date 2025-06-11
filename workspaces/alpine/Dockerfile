@@ -51,8 +51,7 @@ RUN apk update && apk add --no-cache \
     neovim \
     neovim-doc \
     rust \
-    cargo &&
-    rm -rf /var/cache/apk/*
+    cargo && rm -rf /var/cache/apk/*
 
 # Instalar dependencias de desarrollo globales en una sola capa
 RUN npm install -g \
