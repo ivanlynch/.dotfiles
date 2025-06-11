@@ -32,24 +32,28 @@ echo "🐳 Iniciando configuración de Alpine Development Environment..."
 cd "$(dirname "$0")"
 echo "📁 Directorio de trabajo: $(pwd)"
 
-# Función para calcular hash de archivos relevantes
+# Copiar archivos de configuración SIEMPRE antes de iniciar el contenedor
+rm -rf .config
+mkdir -p .config
+
+# Copiar fish config
+if [ -d "$HOME/.config/fish" ]; then
+    cp -r "$HOME/.config/fish" .config/
+    echo "🐟 Configuración de Fish copiada"
+fi
+
+# Copiar neovim config
+if [ -d "$HOME/.config/nvim" ]; then
+    cp -r "$HOME/.config/nvim" .config/
+    echo "📝 Configuración de Neovim copiada"
+fi
+
+# Función para calcular hash de todo el contenido de la carpeta alpine
 calculate_build_hash() {
-    {
-        # Hash del Dockerfile
-        [ -f "Dockerfile" ] && cat "Dockerfile"
-
-        # Hash del entrypoint
-        [ -f "entrypoint.sh" ] && cat "entrypoint.sh"
-
-        # Hash de configuraciones si existen
-        [ -d "$HOME/.config/fish" ] && find "$HOME/.config/fish" -type f -exec cat {} \;
-        [ -d "$HOME/.config/nvim" ] && find "$HOME/.config/nvim" -type f -name "*.lua" -o -name "*.vim" -exec cat {} \;
-
-        # Variables que afectan el build
-        echo "USER_ID=$(id -u)"
-        echo "GROUP_ID=$(id -g)"
-        echo "USER_NAME=$(whoami)"
-    } | shasum -a 256 | cut -d' ' -f1
+    find . -type f \
+        ! -name '.build_cache' \
+        ! -name 'init.sh' \
+        -exec cat {} + | shasum -a 256 | cut -d' ' -f1
 }
 
 # Función para verificar si necesitamos rebuild
@@ -110,23 +114,6 @@ fi
 # Verificar si necesitamos hacer rebuild
 if needs_rebuild; then
     echo "🔨 Construyendo nueva imagen..."
-
-    # Copiar archivos de configuración
-    echo "⚙️  Preparando archivos de configuración..."
-    rm -rf .config
-    mkdir -p .config
-
-    # Copiar fish config
-    if [ -d "$HOME/.config/fish" ]; then
-        cp -r "$HOME/.config/fish" .config/
-        echo "🐟 Configuración de Fish copiada"
-    fi
-
-    # Copiar neovim config
-    if [ -d "$HOME/.config/nvim" ]; then
-        cp -r "$HOME/.config/nvim" .config/
-        echo "📝 Configuración de Neovim copiada"
-    fi
 
     # Calcular hash de configuraciones para invalidar cache de Docker
     config_hash=$(calculate_build_hash)
