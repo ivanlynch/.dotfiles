@@ -1,0 +1,42 @@
+#!/usr/bin/env fish
+
+# Script para configurar directorios seguros de Git para Neovim
+# Ejecuta este script si obtienes errores de "dubious ownership" en Neovim
+
+echo "🔧 Configurando directorios seguros de Git para Neovim..."
+
+# Configurar directorios seguros globalmente
+set -l nvim_lazy_dirs \
+    "$HOME/.local/share/nvim/lazy/lazy.nvim" \
+    "$HOME/.local/share/nvim/lazy/conform.nvim" \
+    "$HOME/.local/share/nvim/lazy/fzf-lua" \
+    "$HOME/.local/share/nvim/lazy/nvim-treesitter" \
+    "$HOME/.local/share/nvim/lazy/nvim-web-devicons"
+
+# Configurar cada directorio específico
+for dir in $nvim_lazy_dirs
+    if test -d "$dir"
+        echo "  ✅ Agregando $dir como directorio seguro"
+        git config --global --add safe.directory "$dir"
+    else
+        echo "  ⚠️  Directorio no encontrado: $dir"
+    end
+end
+
+# Configurar patrones generales
+echo "  🌟 Agregando patrones generales..."
+git config --global --add safe.directory "$HOME/.local/share/nvim/lazy/*"
+git config --global --add safe.directory "$HOME/workspace"
+git config --global --add safe.directory "$HOME/workspace/*"
+git config --global --add safe.directory "$HOME/workspaces"
+git config --global --add safe.directory "$HOME/workspaces/*"
+git config --global --add safe.directory "$HOME/.dotfiles"
+
+# Para casos extremos, agregar comodín universal (úsalo con precaución)
+git config --global --add safe.directory "*"
+
+echo "🎉 ¡Configuración completada!"
+echo "🔄 Reinicia Neovim para que los cambios tomen efecto."
+echo ""
+echo "📋 Para verificar la configuración actual:"
+echo "   git config --global --get-regexp safe.directory"

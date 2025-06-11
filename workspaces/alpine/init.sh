@@ -3,6 +3,29 @@ TAG="latest"
 CONTAINER_NAME="alpine-dev"
 BUILD_CACHE_FILE=".build_cache"
 
+# Verificar si se solicita forzar rebuild
+FORCE_REBUILD=false
+if [ "$1" = "--rebuild" ] || [ "$1" = "-r" ]; then
+    FORCE_REBUILD=true
+    echo "🔄 Forzando rebuild de la imagen..."
+elif [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
+    echo "🐳 Alpine Development Environment"
+    echo ""
+    echo "Uso: $0 [opciones]"
+    echo ""
+    echo "Opciones:"
+    echo "  -r, --rebuild    Forzar rebuild de la imagen Docker"
+    echo "  -h, --help       Mostrar esta ayuda"
+    echo ""
+    echo "El script detecta automáticamente cambios en:"
+    echo "  - Dockerfile"
+    echo "  - entrypoint.sh"
+    echo "  - Configuraciones de Fish (~/.config/fish)"
+    echo "  - Configuraciones de Neovim (~/.config/nvim)"
+    echo ""
+    exit 0
+fi
+
 echo "🐳 Iniciando configuración de Alpine Development Environment..."
 
 # Asegurarse de estar en el directorio del script
@@ -31,27 +54,39 @@ calculate_build_hash() {
 
 # Función para verificar si necesitamos rebuild
 needs_rebuild() {
+    # Si se fuerza rebuild, siempre rebuildeamos
+    if [ "$FORCE_REBUILD" = true ]; then
+        echo "🔨 Rebuild forzado por parámetro --rebuild"
+        return 0
+    fi
+
     local current_hash=$(calculate_build_hash)
+    echo "🔍 Hash actual: $current_hash"
 
     # Si no existe archivo de cache, necesitamos rebuild
     if [ ! -f "$BUILD_CACHE_FILE" ]; then
+        echo "📝 No existe archivo de cache, creando uno nuevo"
         echo "$current_hash" >"$BUILD_CACHE_FILE"
         return 0
     fi
 
     # Comparar hash actual con el guardado
     local cached_hash=$(cat "$BUILD_CACHE_FILE" 2>/dev/null || echo "")
+    echo "💾 Hash guardado: $cached_hash"
 
     if [ "$current_hash" != "$cached_hash" ]; then
+        echo "🔄 Detectados cambios en configuración"
         echo "$current_hash" >"$BUILD_CACHE_FILE"
         return 0
     fi
 
     # Verificar si la imagen existe localmente
     if ! docker image inspect "$IMAGE_NAME:$TAG" >/dev/null 2>&1; then
+        echo "📦 Imagen no existe localmente, necesario rebuild"
         return 0
     fi
 
+    echo "✅ No se detectaron cambios, usando imagen existente"
     return 1
 }
 
@@ -74,7 +109,7 @@ fi
 
 # Verificar si necesitamos hacer rebuild
 if needs_rebuild; then
-    echo "🔄 Detectados cambios, construyendo nueva imagen..."
+    echo "🔨 Construyendo nueva imagen..."
 
     # Copiar archivos de configuración
     echo "⚙️  Preparando archivos de configuración..."
