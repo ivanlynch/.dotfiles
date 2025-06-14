@@ -19,4 +19,12 @@ return {
 	},
 	lazy = false,
 	priority = 100,
+  keys = {
+    {
+      "<leader>fp",
+      "<cmd>NeovimProjectDiscover<CR>",
+      desc="[F]ind [P]rojects",
+      mode="n"
+    },
+  }
 }
