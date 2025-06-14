@@ -124,6 +124,7 @@ if status is-interactive
     alias alpine="chmod +x ~/workspaces/alpine/init.sh && ~/workspaces/alpine/init.sh"
 	  alias vim="nvim"
     alias luarocks="luarocks-5.1"
+  alias find="gfind"
 
     # Alias específicos de macOS
     if test (uname) = "Darwin"
