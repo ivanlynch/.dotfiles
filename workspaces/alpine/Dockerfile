@@ -14,7 +14,7 @@ RUN adduser -s /usr/bin/fish -D $USER_NAME -u $USER_ID -G users -g "User $USER_N
 ENV PATH="${HOME}/.cargo/bin:${PATH}"
 
 # Actualizar el SO e instalar todas las dependencias en una sola capa para optimizar cache
-RUN apk update && apk add --no-cache openssh-client curl less ripgrep ncurses su-exec shadow gcc g++ make cmake musl-dev linux-headers readline-dev ncurses-dev python3 py3-pip py3-isort black nodejs-current xclip lua5.1 lua5.1-dev luarocks git fish fzf zoxide bat eza starship npm neovim neovim-doc rust cargo findutils && rm -rf /var/cache/apk/*
+RUN apk update && apk add --no-cache openssh-client curl less ripgrep ncurses su-exec shadow gcc g++ make cmake musl-dev linux-headers readline-dev ncurses-dev python3 py3-pip py3-isort black nodejs-current xclip lua5.1 lua5.1-dev luarocks git fish fzf zoxide bat eza starship npm neovim neovim-doc rust cargo findutils viu chafa && rm -rf /var/cache/apk/*
 
 # Instalar dependencias de desarrollo globales
 RUN npm install -g vscode-langservers-extracted typescript-language-server typescript vscode-markdown-languageserver prettier @fsouza/prettierd && npm cache clean --force
