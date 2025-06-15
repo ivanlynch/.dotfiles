@@ -9,11 +9,6 @@ vim.g.loaded_perl_provider = 0
 vim.g.loaded_python3_provider = 0
 vim.g.loaded_ruby_provider = 0
 
-vim.lsp.enable("html")
-vim.lsp.enable("css")
-vim.lsp.enable("typescript")
-vim.lsp.enable("markdown")
-
 vim.opt.completeopt = { "menu", "menuone", "noinsert", "noselect" }
 
 vim.api.nvim_create_autocmd("LspAttach", {
@@ -32,4 +27,5 @@ vim.api.nvim_create_autocmd("BufWritePre", {
 	end,
 })
 
-require("config.lazy")
+require("core.lazy")
+require("core.lsp")
