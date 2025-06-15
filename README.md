@@ -5,19 +5,23 @@ This repo was created to share my config and to be plug and play when i switch c
 ### To install my config just run:
 
 #### Linux / macOS
+
 ```bash
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/ivanlynch/.dotfiles/main/bin/dotfiles)"
 ```
 
-#### Windows
-```powershell
-Set-ExecutionPolicy Bypass -Scope Process -Force; iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/ivanlynch/.dotfiles/main/bin/dotfiles.ps1'))
-```
+### Plugins
 
-### Características
+1. Treesitter
+   This plugins installs all the needed parsers
 
-- Configuración cross-platform (Linux, macOS, Windows)
-- Detección automática del sistema operativo
-- Backup automático de la configuración existente
-- Configuración de PowerShell en `.config/powershell` en Windows
-- Instalación de dependencias necesarias según el sistema operativo
+2. Mason
+   Mason is a neovim dependencies manager. Needed to install LSPs and Formatters
+
+3. Conform
+   Conform is a formatter configuration for every file. Where we connect mason formatters with files.
+
+4. Mason Conform
+   Is a plugin that reads the configuration defined in conform and automatically installs whatever it needs from Mason.
+
+5. fzf-lua
