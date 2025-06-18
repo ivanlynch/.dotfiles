@@ -1,16 +1,24 @@
-vim.opt.tabstop = 2
-vim.opt.softtabstop = 2
-vim.opt.shiftwidth = 2
-vim.opt.expandtab = true
-vim.opt.clipboard = "unnamedplus"
+local o = vim.opt
 
-vim.opt.swapfile = false
+o.termguicolors = true -- Enable true colors
+o.background = "dark" -- set dark mode
+o.tabstop = 2
+o.softtabstop = 2
+o.shiftwidth = 2
+o.expandtab = true
+o.clipboard = "unnamedplus" -- When yank copy to clipboard also
+o.swapfile = false
+o.number = true -- active line numbers
+o.relativenumber = true -- use relative numbers from current line
+o.cmdheight = 0 -- Status bar position. 0 means the first line from bottom to top
+o.cursorline = true -- Highlight cursor line
+
 vim.g.loaded_node_provider = 0
 vim.g.loaded_perl_provider = 0
 vim.g.loaded_python3_provider = 0
 vim.g.loaded_ruby_provider = 0
 
-vim.opt.completeopt = { "menu", "menuone", "noinsert", "noselect" }
+o.completeopt = { "menu", "menuone", "noinsert", "noselect" }
 
 vim.api.nvim_create_autocmd("LspAttach", {
 	callback = function(event)
